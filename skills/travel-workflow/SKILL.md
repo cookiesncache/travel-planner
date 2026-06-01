@@ -63,7 +63,7 @@ Ask before doing anything:
 - Where are they going, and when?
 - Who's traveling? (solo, couple, group, family with kids — and ages of kids if relevant)
 - Do they have pets? If so, are the pets coming or staying home?
-- What's already done? (e.g. "flights booked, hotel sorted, nothing else yet")
+- What's already booked? Capture this as a free-text field rather than a fixed set of choices — people book all kinds of things (flights, lodging, trains, ferries, tickets, insurance, cruises) and a preset list will always miss some. Let them describe it in their own words (e.g. "flights booked, hotel sorted, nothing else yet") and capture it verbatim.
 
 **Ask only if not inferable:**
 - Trip type — infer from destination and transport if possible (e.g. "driving to the coast" → road trip, "flying to Tokyo" → international). Ask only if genuinely unclear.
