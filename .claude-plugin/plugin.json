@@ -1,0 +1,8 @@
+{
+  "name": "travel-planner",
+  "version": "0.1.0",
+  "description": "Guides Claude through planning any trip end-to-end — road trips, flights, international travel, city breaks — using a structured 5-phase workflow with optional Todoist integration.",
+  "author": {
+    "name": "Claude"
+  }
+}
