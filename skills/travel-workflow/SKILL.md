@@ -14,23 +14,23 @@ description: >
 
 Guide the user through planning their trip using the 5-phase structure below.
 
-## Required Tools
+## Capabilities
 
-Check for required tools before doing anything else. Be specific and actionable if something is missing — the user may not know what to do.
+Check what's connected at the start of the session, then proceed either way — **never hard-stop because a tool is missing.** Connected tools make the plugin more powerful; without them, fall back as described below so the user still gets a complete, usable plan.
 
-**Task management (required):** Look for any connected tool that supports task creation and management (Todoist, Things, Apple Reminders, Asana, TickTick, etc.). If none is found, stop and respond with something like:
+When a capability is missing, mention the connect-to-save benefit **once**, then drop it — do not nudge again later in the session.
 
-> "To get started, this plugin needs a task management app connected — that's where your trip tasks will live. Apps like Todoist, Things, or Apple Reminders all work. You can find setup instructions here: https://support.claude.com/en/articles/11176164-use-connectors-to-extend-claude-s-capabilities — come back once it's connected and we'll pick up from here."
+**Task management — persists your plan.** Look for any connected task tool (Todoist, Things, Apple Reminders, Asana, TickTick, etc.).
+- *Connected:* create and manage trip tasks there.
+- *Not connected:* maintain the plan as a **checklist markdown artifact** — the 5 phases with checkboxes — and keep it updated as planning evolves. Offer once, e.g.: "I'll keep this as a checklist file for now. Connect a task app like Todoist and I'll sync it there on your next trip instead."
 
-**Calendar (required):** Look for any connected tool that supports calendar events (Google Calendar, Outlook, Apple Calendar, etc.). If none is found, stop and respond with something like:
+**Calendar / scheduling — blocks dates and reminds you.** Look for any connected calendar (Google Calendar, Outlook, Apple Calendar, etc.).
+- *Connected:* create the trip event, key dated events, and reminders.
+- *Not connected:* record the trip's dated items in the checklist artifact, and offer once to set **scheduled-task reminders** for time-sensitive prep (visa, flight check-in).
 
-> "This plugin also needs calendar access — it'll use it to block out your trip and add key events. Google Calendar, Outlook, and Apple Calendar all work. Setup instructions: https://support.claude.com/en/articles/11176164-use-connectors-to-extend-claude-s-capabilities"
+**Email — optional, surfaces existing bookings.** If a connected email tool is available, use it to surface existing booking confirmations. If not, skip silently — do not mention it to the user.
 
-If both are missing, mention both in a single message rather than stopping twice.
-
-**Email app (optional):** If a connected email tool is available, use it to surface existing booking confirmations. If not, skip silently — do not mention it to the user.
-
-Once both required tools are confirmed, proceed.
+See `references/fallbacks.md` for how to run the checklist-artifact and scheduled-reminder fallbacks. Once you know what's connected, proceed.
 
 ---
 
@@ -74,6 +74,8 @@ Ask before doing anything:
 
 ## Step 2 — Audit the Task Project
 
+If no task tool is connected, run this same phase grouping and gap analysis against the **checklist markdown artifact** instead of a task project — see `references/fallbacks.md`. Everything below applies either way.
+
 Find the user's travel project in their task management tool. If no travel project exists, offer to create one.
 
 Cross-reference existing tasks against:
@@ -103,6 +105,8 @@ Using the connected calendar tool, propose the following and only create what th
 - Reminders for time-sensitive prep tasks (e.g. visa application, flight check-in) — offer these separately
 
 If dates aren't known yet, skip and offer to revisit once tasks have due dates set.
+
+If no calendar tool is connected, record the trip's dated items in the checklist artifact instead, and offer once to set scheduled-task reminders for time-sensitive prep. See `references/fallbacks.md`.
 
 See `references/calendar-integration.md` for guidance.
 

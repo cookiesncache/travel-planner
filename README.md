@@ -26,16 +26,18 @@ Adapts based on who's traveling, whether you have kids, and what's happening wit
 
 ---
 
-## 🔧 What you need
+## 🔧 What you can connect
 
-**📋 Task management** — Todoist, Things, Apple Reminders, Asana, etc.
-This is where your trip tasks will be created and managed. Connect one before getting started.
+Nothing is required — the plugin works out of the box and gets more powerful as you connect tools. Connect anything and it's used automatically on your next trip.
 
-**📅 A calendar** — Google Calendar, Outlook, Apple Calendar, etc.
-The plugin will use this to block out your trip and add events as you plan. Connect one before getting started.
+**📋 Task management** *(recommended)* — Todoist, Things, Apple Reminders, Asana, etc.
+Where your trip tasks live. Not connected? The plugin keeps your plan as a checklist file you can save and bring back later.
+
+**📅 A calendar** *(recommended)* — Google Calendar, Outlook, Apple Calendar, etc.
+Used to block out your trip and add key events. Not connected? Key dates go into your checklist, and the plugin can set scheduled reminders for time-sensitive prep.
 
 **📬 An email app** *(optional)* — Gmail, Outlook, etc.
-Not required, but if you connect one, the plugin will scan for booking confirmations when you revisit a trip and flag anything not yet in your task project. Worth knowing: connecting email gives Claude access to your inbox beyond just travel confirmations.
+If connected, the plugin scans for booking confirmations when you revisit a trip and flags anything not yet captured. Worth knowing: connecting email gives Claude access to your inbox beyond just travel confirmations.
 
 ---
 
