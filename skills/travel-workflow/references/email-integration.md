@@ -16,6 +16,6 @@ Narrow searches by the trip date range where possible.
 
 - Extract only: booking type, vendor, date(s), and confirmation number
 - Do not read or summarize full email content
-- Cross-reference against existing tasks in the travel project
-- Surface anything not yet captured as a task and offer to add it
+- Cross-reference against both the task project and the calendar — only surface if not already reflected in either
+- Surface anything not yet captured and offer to add it as a task
 - Flag any confirmation that looks incomplete (e.g. missing return leg, no confirmation number, payment not confirmed)

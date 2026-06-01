@@ -97,12 +97,12 @@ See `references/task-integration.md` for guidance.
 
 ## Step 3 — Set Up the Calendar
 
-Using the connected calendar tool:
-- Create a multi-day all-day event spanning the full trip (departure to return)
-- Add individual events for flights, hotel check-ins/outs, timed-entry bookings, and major planned activities
-- Offer to add reminders for time-sensitive prep tasks (e.g. visa application, flight check-in)
+Using the connected calendar tool, propose the following and only create what the user confirms:
+- A multi-day all-day event spanning the full trip (departure to return)
+- Individual events for flights, hotel check-ins/outs, timed-entry bookings, and major planned activities
+- Reminders for time-sensitive prep tasks (e.g. visa application, flight check-in) — offer these separately
 
-Only create events the user confirms. If dates aren't known yet, skip and offer to revisit once tasks have due dates set.
+If dates aren't known yet, skip and offer to revisit once tasks have due dates set.
 
 See `references/calendar-integration.md` for guidance.
 
