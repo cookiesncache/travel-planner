@@ -43,9 +43,29 @@ If connected, the plugin scans for booking confirmations when you revisit a trip
 
 ## 📥 How to install
 
-You'll need [Claude Desktop](https://claude.com/download) with a paid plan (Pro, Max, Team, or Enterprise) and Cowork enabled.
+Requires a paid Claude plan (Pro, Max, Team, or Enterprise).
 
-Download the `.plugin` file from this repo's [Releases](../../releases), then follow [Anthropic's plugin install guide](https://support.claude.com/en/articles/13837440-use-plugins-in-claude).
+**Claude desktop** — add the marketplace via repo URL, then install the plugin:
+1. Open Settings → Plugins → Personal → Add marketplace
+2. Enter `https://github.com/cookiesncache/travel-planner`
+3. Install **travel-planner** from the marketplace
+
+**Claude Code** — run these two commands:
+```
+/plugin marketplace add cookiesncache/travel-planner
+/plugin install travel-planner@travel-planner-marketplace
+```
+
+### Updating
+
+**Claude desktop** — an update button appears automatically when a new version is available.
+
+**Claude Code:**
+```
+/plugin marketplace update travel-planner-marketplace
+/plugin uninstall travel-planner@travel-planner-marketplace
+/plugin install travel-planner@travel-planner-marketplace
+```
 
 ---
 
