@@ -43,7 +43,7 @@ If connected, the plugin scans for booking confirmations when you revisit a trip
 
 ## 📥 How to install
 
-Requires a Claude subscription (Pro, Max, Team, or Enterprise), a Claude Console account, or access through a supported cloud provider. A free Claude plan is not sufficient.
+Requires a Claude subscription (Pro, Max, Team, or Enterprise). A free Claude plan is not sufficient.
 
 Add the marketplace, then install the plugin:
 
@@ -52,7 +52,9 @@ Add the marketplace, then install the plugin:
 /plugin install travel-planner@travel-planner-marketplace
 ```
 
-For general plugin and marketplace guidance, see the [official Claude Code plugin documentation](https://code.claude.com/docs/en/discover-plugins).
+For platform-specific instructions, see the official docs:
+- [Claude Code (CLI)](https://code.claude.com/docs/en/discover-plugins)
+- [Claude Desktop](https://code.claude.com/docs/en/desktop#install-plugins)
 
 ---
 
