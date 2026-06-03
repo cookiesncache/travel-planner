@@ -1,126 +1,113 @@
 ---
 name: travel-workflow
 description: >
-  Plan any trip end-to-end using a structured 5-phase workflow. Use when the
-  user says "plan my trip", "help me organize a trip", "travel checklist",
-  "what do I need for my vacation", "I'm traveling to X", or asks to review
-  or add tasks to an existing travel project. Covers all trip types: road
-  trips, flights, international travel, city breaks, and multi-destination
-  tours. Requires task management and calendar capabilities. A single connector exposing both is fine. Email integration
-  is optional.
+  Plan any trip end-to-end using a 4-step workflow backed by a 5 Phase Task
+  Checklist. Use when the user says "plan my trip", "help me organize a trip",
+  "travel checklist", "what do I need for my vacation", "I'm traveling to X",
+  or asks to review or add tasks to an existing trip plan. Covers all
+  trip types: road trips, flights, international travel, city breaks, and
+  multi-destination tours.
 ---
 
 # Travel Workflow
 
-Guide the user through planning their trip using the 5-phase structure below.
+Guide the user through planning their trip using the 4-step workflow below. The 5 Phase Task Checklist at the bottom is for scoping what's still ahead — not the workflow itself.
 
 ## Capabilities
 
-Check what's connected at the start of the session, then proceed either way — **never hard-stop because a tool is missing.** Connected tools make the plugin more powerful; without them, fall back as described below so the user still gets a complete, usable plan.
+Connected tools make the plugin more powerful; without them, fall back as described below so the user still gets a complete, usable plan. **Never hard-stop because a tool is missing.**
 
 When a capability is missing, mention the connect-to-save benefit **once**, then drop it — do not nudge again later in the session.
 
-**Task management — persists your plan.** Look for any connected task tool (Todoist, Things, Apple Reminders, Asana, TickTick, etc.).
-- *Connected:* create and manage trip tasks there.
-- *Not connected:* maintain the plan as a **checklist markdown artifact** — the 5 phases with checkboxes — and keep it updated as planning evolves. Offer once, e.g.: "I'll keep this as a checklist file for now. Connect a task app like Todoist and I'll sync it there on your next trip instead."
-
-**Calendar / scheduling — blocks dates and reminds you.** Look for any connected calendar (Google Calendar, Outlook, Apple Calendar, etc.).
+**Calendar — blocks dates and reminds you.** Look for any connected calendar (Google Calendar, Outlook, Apple Calendar, etc.).
 - *Connected:* create the trip event, key dated events, and reminders.
-- *Not connected:* record the trip's dated items in the checklist artifact, and offer once to set **scheduled-task reminders** for time-sensitive prep (visa, flight check-in).
+- *Not connected:* record dated items in the itinerary file instead. Offer once, e.g.: "No calendar connected, so I've added key dates to your itinerary. Want me to set reminders for the time-sensitive ones?"
 
-**Email — optional, surfaces existing bookings.** If a connected email tool is available, use it to surface existing booking confirmations. If not, skip silently — do not mention it to the user.
+**Itinerary — the day-by-day trip plan.** Look for any connected itinerary app, notes tool, or docs tool (Wanderlog, Notion, Google Docs, etc.).
+- *Connected:* create and maintain the trip itinerary there.
+- *Not connected:* generate an **itinerary markdown file** named after the destination (e.g. `tokyo-itinerary.md`). Offer once, e.g.: "I'll keep your itinerary as a file for now. Connect an app like Wanderlog or Notion and I'll maintain it there instead."
 
-See `references/fallbacks.md` for how to run the checklist-artifact and scheduled-reminder fallbacks. Once you know what's connected, proceed.
+The source of truth is the most capable connected itinerary tool — see capability tiers in Step 1. If data exists in a less capable tool, offer to migrate it. If only one itinerary tool is connected, that is the source of truth regardless of capability.
+
+**Task management — tracks what still needs to be done.** Look for any connected task tool (Todoist, Things, Apple Reminders, Asana, TickTick, etc.).
+- *Connected:* create and manage trip tasks there.
+- *Not connected:* maintain tasks as a **markdown task file**. Offer once, e.g.: "I'll keep your tasks as a file for now. Connect a task app like Todoist and I'll manage them there instead."
+
+**Email — surfaces existing bookings.** Look for any connected email tool (Gmail, Outlook, etc.).
+- *Connected:* search for booking confirmations and surface anything not yet captured.
+- *Not connected:* skip silently — do not mention it to the user.
+
+**All tool use throughout this skill is conditional on availability — never attempt to use a tool that isn't connected.** Fallback behavior for each capability is defined above.
+
+See `references/fallbacks.md` for fallback behavior. See `references/integrations.md` for how to identify which tools are connected. Once you know what's connected, proceed.
 
 ---
 
 ## Step 1 — Intake
 
-Before asking the user anything, check whether a travel project already exists in their task management tool.
+Before asking the user anything — and again whenever they ask to update their trip status — load context from all connected tools. Use what you find, along with the conversation, to determine whether this is a returning or first-time user. A returning user is one who has previously run this workflow for this trip in a prior session — their data must exist somewhere. Anything said in the current conversation does not count as prior invocation. A first-time user has not previously run the workflow for this trip.
 
-### Returning user (project exists)
+**Itinerary tool capability tiers** (most to least capable): purpose-built travel apps (Wanderlog, TripIt) → structured notes tools (Notion) → general docs (Google Docs) → generated markdown file. If multiple itinerary tools are connected, use these tiers to select the best one, surface the recommendation, and confirm with the user before proceeding.
 
-Pull context from connected tools before asking any questions:
+### Returning user (workflow previously invoked)
 
-- **Task management:** Fetch the project overview — infer destination, trip type, dates, and traveler context from existing tasks
-- **Email (if connected):** Search for new booking confirmations since the last session — flag anything not yet in the project
-- **Calendar (if connected):** Check for new trip-related events added since the last session — flag anything not yet in the project
+**1.1 Establish the source of truth.** Identify the most capable connected itinerary tool using the tiers above and treat it as the source of truth — but let the user override this if they prefer a different tool. Cross-reference everything else against it. If multiple distinct trips are found, ask the user which one they mean before proceeding. If no data is found in any connected tool, surface this explicitly — do not silently create a new file. Ask whether to start fresh or check a different tool.
 
-After pulling context, cross-reference findings across connectors before surfacing anything to the user:
+**1.2 Offer to upgrade if a more capable connector is available.** If a more capable itinerary tool is connected but isn't the current source of truth, surface this and offer to port the trip plan over. If the user declines, continue with the existing source of truth.
 
-- If a new email confirmation matches an existing calendar event, treat it as already captured — do not surface it as a gap
-- If a new calendar event matches an existing task, treat it as already captured
-- Only surface something as new if it isn't already reflected in any connected tool
+**1.3 Surface what's new.** Load findings from all connected tools and cross-reference them against the source of truth in both directions:
+- **Into the source of truth** — if a booking or event appears in email, calendar, or tasks but is missing from the source of truth, surface it as new
+- **Deduplication** — if something already appears in the source of truth, do not surface it again regardless of which other tool it also appears in
 
-Only ask about what genuinely can't be inferred. If the project makes the situation clear, skip straight to Step 2 with a brief summary of what you found:
+See `references/email-integration.md` for email-specific guidance.
 
-> "Looks like you're flying to Tokyo in September — solo trip, flights and hotel already in the project. Found a new tour confirmation in your email that's not captured yet. Want me to add it and check what else is still ahead?"
+Only ask about what genuinely can't be inferred. Summarize what you found, then proceed with Steps 2–4 only where an update is needed:
 
-### First-time user (no project found)
+> "Looks like you're flying to Tokyo in September — solo trip, flights and hotel already captured. Found a new tour confirmation in your email that's not in your itinerary yet. Want me to add it and check what else is still ahead?"
 
-Ask before doing anything:
+### First-time user (workflow not previously invoked)
 
-- Where are they going, and when?
-- Who's traveling? (solo, couple, group, family with kids — and ages of kids if relevant)
-- Do they have pets? If so, are the pets coming or staying home?
-- What's already booked? Capture this as a free-text field rather than a fixed set of choices — people book all kinds of things (flights, lodging, trains, ferries, tickets, insurance, cruises) and a preset list will always miss some. Let them describe it in their own words (e.g. "flights booked, hotel sorted, nothing else yet") and capture it verbatim.
+Use what was loaded from connected tools, along with the conversation. Only ask for what still can't be inferred:
+- **Destination and dates** — infer from the user's message if possible
+- **Trip type** — infer from destination and transport (e.g. "driving to the coast" → road trip, "flying to Tokyo" → international)
+- **Who's traveling** — solo, couple, group, family with kids (and ages if relevant)
+- **Pets** — coming along or staying home
+- **What's already booked** — use any context already loaded from connected tools; ask only for what isn't already known. Capture as free text (e.g. "flights booked, hotel sorted, nothing else yet")
 
-**Ask only if not inferable:**
-- Trip type — infer from destination and transport if possible (e.g. "driving to the coast" → road trip, "flying to Tokyo" → international). Ask only if genuinely unclear.
-
-**Take their word for it.** If they say something is done, treat it as done. Do not create tasks for it, do not question it, do not suggest confirming it. The checklist is for what's still ahead, not a retrospective audit.
+**Take their word for it.** If they say something is done, treat it as done and focus on what's still ahead.
 
 ---
 
-## Step 2 — Audit the Task Project
+## Step 2 — Itinerary
 
-If no task tool is connected, run this same phase grouping and gap analysis against the **checklist markdown artifact** instead of a task project — see `references/fallbacks.md`. Everything below applies either way.
+Create or update the day-by-day trip plan using what was gathered in Step 1. Only add or change what the user confirms.
 
-Find the user's travel project in their task management tool. If no travel project exists, offer to create one.
-
-Cross-reference existing tasks against:
-1. What the user said is already done — exclude anything they've confirmed complete, even if there's no task for it
-2. The 5-phase checklist below — identify what's genuinely still ahead and not yet captured
-
-Present gaps grouped by phase. Only suggest tasks for things that are both not done in reality AND not yet in the project. Ask which to add before creating anything.
-
-If the project has no sections, offer to add them:
-- "Define"
-- "Preparation"
-- "Pre-Departure"
-- "The Trip"
-- "Follow-up"
-
-Do not embed dates or months in section names.
-
-See `references/task-integration.md` for guidance.
+See `references/itinerary-integration.md` for guidance.
 
 ---
 
-## Step 3 — Set Up the Calendar
+## Step 3 — Schedule
 
-Using the connected calendar tool, propose the following and only create what the user confirms:
-- A multi-day all-day event spanning the full trip (departure to return)
+Create or update calendar events — only make changes the user confirms:
+- An event spanning the full trip (departure to return) — use specific times if known, otherwise all-day
 - Individual events for flights, hotel check-ins/outs, timed-entry bookings, and major planned activities
-- Reminders for time-sensitive prep tasks (e.g. visa application, flight check-in) — offer these separately
+- Reminders for time-sensitive prep tasks (e.g. visa application, flight check-in) — use whichever is available: calendar, task app, or scheduled-task capability. Only skip reminders if none of these are available.
 
-If dates aren't known yet, skip and offer to revisit once tasks have due dates set.
-
-If no calendar tool is connected, record the trip's dated items in the checklist artifact instead, and offer once to set scheduled-task reminders for time-sensitive prep. See `references/fallbacks.md`.
+If dates aren't known yet, skip and offer to revisit once the itinerary has dates set.
 
 See `references/calendar-integration.md` for guidance.
 
 ---
 
-## Step 4 — Check Email (if available)
+## Step 4 — Tasks
 
-Only run this step for returning users (project already existed at the start of the session). For first-time users, intake already captures what's done — skip this step entirely.
+Identify what's still ahead and not yet captured. Cross-reference against:
+- What the user said is already done — exclude anything they've confirmed complete
+- The 5 Phase Task Checklist below — surface genuine gaps only
 
-If a connected email tool is available, search for booking confirmations added since the last session (flights, hotels, rental cars, tours). Cross-reference against both the task project and the calendar — only surface something if it isn't already reflected in either. Flag any confirmation that looks incomplete.
+Present gaps grouped by phase. Only suggest tasks for things not done in reality AND not yet in the source of truth. Ask which to add before creating anything.
 
-Do not read or summarize full email content — only extract booking type, date, and vendor.
-
-See `references/email-integration.md` for guidance.
+See `references/task-integration.md` for guidance.
 
 ---
 
@@ -134,39 +121,40 @@ Use the trip type (inferred or confirmed in intake) to scope which checklist ite
 - **City break** — short stay, lighter logistics; skip most admin unless international
 - **Multi-destination** — multiple transport legs, higher risk of lodging gaps between stops
 
+---
+
 ## Traveler Context
 
 Use who's traveling and pet situation to scope suggestions:
 
 **Solo:**
-- Add: share itinerary with someone at home, check-in schedule with a contact
+- Add: share itinerary with a contact at home, set up a regular check-in schedule with them
 - Skip: group coordination tasks
 
 **Couple:**
-- Similar to solo; flag dining reservations if the destination warrants it
+- Add: dining reservations for destinations known for competitive bookings (major food cities, peak season)
 
 **Group:**
 - Add: shared itinerary distribution, group transport coordination, cost-splitting plan
 - Flag: lodging that accommodates the full group
 
 **Family with kids:**
-- Add: child-specific packing (medications, snacks, entertainment), car seat if renting a vehicle, kid-friendly activity research, more conservative daily pacing
-- For international: travel documents and consent letters for minors, check entry requirements for children
+- Add: child-specific packing (medications, snacks, entertainment), car seat if renting, kid-friendly activity research, conservative daily pacing
+- Add (international): travel documents and consent letters for minors, entry requirements for children
 - Flag: lodging suitability for kids, flight seat arrangements
 
 **Pets — staying home:**
-- Surface explicitly: arrange pet care (sitter, kennel, trusted contact), leave feeding and emergency vet instructions
-- Do not bury this in generic "home care" language
+- Add: pet care arrangements (sitter, kennel, trusted contact), feeding and emergency vet instructions
+- Note: surface pet care explicitly — do not bury it in generic "home care" tasks
 
 **Pets — coming along:**
-- Add across relevant phases:
-  - Preparation: verify pet-friendly lodging, check airline or transport pet policy and fees, book pet in cabin or cargo as required, obtain health certificate and vaccination records, vet check before travel, confirm pet-friendly activities at destination
-  - Pre-Departure: pack pet supplies (food, carrier, comfort items, medication), confirm carrier meets transport requirements
-  - The Trip: locate nearest vet at destination
+- Add (Preparation): pet-friendly lodging, transport pet policy and fees, health certificate and vaccination records, vet check, pet-friendly activities at destination
+- Add (Pre-Departure): pet supplies (food, carrier, comfort items, medication), confirm carrier meets transport requirements
+- Add (The Trip): nearest vet at destination
 
 ---
 
-## The 5 Phases
+## The 5 Phase Task Checklist
 
 ### Phase 1 — Define 🧠
 
@@ -185,7 +173,7 @@ Use who's traveling and pet situation to scope suggestions:
 - Confirm airport/station transfers at origin and destination
 
 **Lodging:**
-- Book all accommodation — flag any gaps in the nightly calendar
+- Book all accommodation — flag any gaps in nightly coverage
 - Confirm cancellation policies
 
 **Tickets & Passes:**
@@ -213,8 +201,8 @@ Use who's traveling and pet situation to scope suggestions:
 ### Phase 3 — Pre-Departure 🔨
 
 - Build and finalize packing list (clothing, gear, adapters, medication, first aid)
-- Confirm all reservations 48 hrs before departure
-- Check in for flights (usually opens 24 hrs out)
+- Confirm all reservations 48 hours before departure
+- Check in for flights / confirm transport bookings (flight check-in usually opens 24 hrs out)
 - Charge all devices and power banks
 - Set out-of-office replies if needed
 - For road trips: inspect vehicle, check tire pressure
@@ -225,7 +213,7 @@ Use who's traveling and pet situation to scope suggestions:
 - Keep digital and physical copies of documents accessible
 - Note any booking issues to follow up on after returning
 
-### Phase 5 — Follow-up 🚚
+### Phase 5 — Follow-up ✅
 
 - Return any rented vehicles or equipment; confirm no extra charges
 - Review final spend vs. budget
