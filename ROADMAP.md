@@ -1,61 +1,37 @@
 # Roadmap
 
-## Skill Review (Pre-Release)
+## ~~Skill Review (Pre-Release)~~ ✅ Archived
 
-The current single skill needs a careful review before sharing. Key questions to resolve:
-
-### Architecture
-- Should this be one skill or multiple? Candidates for splitting: intake, task management, calendar setup, email scanning, returning user flow
-- Can one connector serve both task and calendar purposes? (e.g. Google Calendar + Google Tasks, or Notion). If so, the two-connector requirement may be overstated. **Resolved:** the plugin detects capabilities, not connector count. A single connector exposing both task and calendar tools would work fine. README updated to reflect capabilities rather than specific apps.
-- **Resolved:** Keep a single orchestrating skill. Routing multiple travel skills via description-matching would create trigger ambiguity, and the workflow is sequential with shared state — splitting would force each skill to re-establish trip context. Revisit only if a sub-flow earns a genuinely distinct, standalone trigger.
-
-### Connector behavior
-- Audit exactly what Claude does in each connected app — what it reads, what it writes, what it creates
-- Ensure the skill instructions are precise enough that Claude doesn't do more than intended in any connector
-- Clarify what "cross-referencing" means in practice for each connector pairing
-- **Resolved (v0.1.1):** Audited reads/writes across task, calendar, and email connectors. Email guidance now cross-references against both tasks and calendar (previously tasks only), matching SKILL.md Step 4.
-
-### User-facing actions
-- Review every step where Claude creates or modifies something in a user's app
-- Confirm confirmation prompts are clear and appropriately scoped
-- Ensure Claude never creates anything without explicit user approval
-- **Resolved (v0.1.1):** Step 3 (calendar) rewritten to frontload "only create what the user confirms" instead of leading with imperative "Create"/"Add" verbs, matching the confirmation-first pattern already used in Step 2 (tasks).
+All concerns resolved through v0.3.0. Architecture settled on a single orchestrating skill with a plan-centric source of truth, connector-agnostic bidirectional sync, and explicit confirmation gates on all Claude-initiated changes.
 
 ---
 
 ## Booking Intel Agent
 
-Extract all booking discovery into a dedicated agent that the main skill can call and act on, rather than doing the information gathering inline.
+Extract email booking discovery into a dedicated agent. Currently, email scanning is handled by inline prose instructions in `references/email-integration.md`, which means Claude does ad-hoc inbox searches with no structured output. An agent encapsulates the noise and returns clean, plan-aware data.
 
 ### What it does
 
-Given trip context (destination, dates), the agent searches across all connected tools and returns a structured digest:
+Given the current travel plan and trip context (destination, dates), the agent searches email and returns a structured digest cross-referenced against the plan:
 
 ```
 {
-  confirmed: [ { type, vendor, dates, ref } ],   // bookings found + already captured
-  new:       [ { type, vendor, dates, ref } ],   // found in email/calendar, not yet in task project
-  gaps:      [ "return leg", "hotel night 3" ]   // expected bookings not found anywhere
+  missing: [ { type, vendor, dates, ref } ],   // found in email, not yet in plan
+  flagged: [ { type, vendor, dates, issue } ], // structurally incomplete or payment rejected
 }
 ```
 
 ### Why an agent
 
 - **Encapsulation:** inbox scanning is noisy — the agent absorbs raw email content and returns only the structured fields the skill needs
-- **Reusability:** both the initial intake flow and the returning-user check need booking discovery; the agent handles both without duplicating logic
-- **Cleaner main thread:** the skill receives a tidy summary instead of interleaving search results with planning steps
-
-### Connector scope
-
-- **Email:** search for flight, hotel, rental car, tour confirmations in the date range
-- **Calendar:** check for trip-related events not yet in the task project
-- **Task project:** retrieve existing tasks to cross-reference against
+- **Reusability:** called from Step 1.2 (reconcile) for returning users, and could power a standalone `/scan` slash command
+- **Cleaner main thread:** the skill receives a tidy summary instead of interleaving raw search results with planning steps
 
 ### Changes required
 
-- Add `agents/booking-intel/AGENT.md` defining the agent, its inputs (trip context), and its output schema
-- Update `SKILL.md` Step 1 (returning user) and Step 4 to call the agent instead of doing discovery inline
-- Update `references/email-integration.md` and `references/calendar-integration.md` to note they describe agent behavior, not inline skill behavior
+- Add `agents/booking-intel/AGENT.md` defining the agent, its inputs (plan + trip context), and its output schema
+- Update `SKILL.md` Step 1.2 to call the agent instead of pointing to `email-integration.md` inline
+- Update `references/email-integration.md` to describe agent behavior and output schema
 
 ---
 
@@ -77,9 +53,9 @@ Add explicit entry points as flat command files alongside the auto-triggering sk
 
 ---
 
-## Budgeting & Cost Splitting
+## Budgeting & Cost Splitting *(raised priority)*
 
-Add a budgeting/cost split app as an optional connector. Useful across all trip types but especially important for groups.
+Add a budgeting/cost split app as an optional connector. Especially valuable for groups. The travel plan is the natural home for budget tracking — the connector syncs spend data in and out.
 
 ### Connector support
 Splitwise, Tricount, YNAB, Trail Wallet — detect what's connected, use it if available, skip silently if not.
@@ -94,14 +70,24 @@ Splitwise, Tricount, YNAB, Trail Wallet — detect what's connected, use it if a
 | Family | Useful for spend tracking; splitting less relevant |
 
 ### What it should do
-- On first session: if a budgeting app is connected, offer to set up a trip budget and shared expense tracker
-- On return sessions: check for new expenses logged since last session and flag anything that looks unaccounted for
+- On first session: if a budgeting app is connected, offer to set up a trip budget and shared expense tracker; add a budget line to the travel plan
+- On return sessions: import new expenses from the connected app into the plan; flag anything that looks unaccounted for
 - For groups: suggest splitting setup early in the Preparation phase before money starts moving
 
 ### Changes required
-- Add budgeting connector detection to the Required Tools section of the skill
+- Add budgeting as a capability in `SKILL.md` (alongside Calendar, Itinerary, Task management, Email)
+- Add a `references/budget-integration.md` reference file
 - Add traveler-context-aware budgeting tasks to the relevant phases (Define for budget-setting, Preparation for splitting setup)
-- Update the README under "What you need"
+- Update the README
+
+---
+
+## GitHub Release Packaging *(low priority)*
+
+Attach a `.zip` of the plugin directory to each GitHub release so users can install a specific version via `--plugin-url` without going through the marketplace update cycle. Useful for version pinning and offline installs.
+
+### Changes required
+- Add a GitHub Action that zips the plugin directory and attaches it as a release asset on each version tag
 
 ---
 
