@@ -44,8 +44,8 @@ If connected, the plugin scans for booking confirmations when you revisit a trip
 ## 📥 How to install
 
 For installation instructions, see the official docs:
-- Claude Code (CLI) — [add the marketplace](https://code.claude.com/docs/en/discover-plugins#add-from-github) `cookiesncache/travel-planner`, then [install](https://code.claude.com/docs/en/discover-plugins#install-plugins) `travel-planner@travel-planner-marketplace`
 - [Claude Desktop](https://code.claude.com/docs/en/desktop#install-plugins) — add a marketplace from repository `cookiesncache/travel-planner`, then install **Travel Planner**
+- Claude Code (CLI) — [add the marketplace](https://code.claude.com/docs/en/discover-plugins#add-from-github) `cookiesncache/travel-planner`, then [install](https://code.claude.com/docs/en/discover-plugins#install-plugins) `travel-planner@travel-planner-marketplace`
 
 ---
 
