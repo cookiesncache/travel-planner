@@ -43,29 +43,16 @@ If connected, the plugin scans for booking confirmations when you revisit a trip
 
 ## 📥 How to install
 
-Requires a paid Claude plan (Pro, Max, Team, or Enterprise).
+Requires a Claude subscription (Pro, Max, Team, or Enterprise), a Claude Console account, or access through a supported cloud provider. A free Claude plan is not sufficient.
 
-**Claude desktop** — add the marketplace via repo URL, then install the plugin:
-1. Open Settings → Plugins → Personal → Add marketplace
-2. Enter `https://github.com/cookiesncache/travel-planner`
-3. Install **travel-planner** from the marketplace
+Add the marketplace, then install the plugin:
 
-**Claude Code** — run these two commands:
 ```
 /plugin marketplace add cookiesncache/travel-planner
 /plugin install travel-planner@travel-planner-marketplace
 ```
 
-### Updating
-
-**Claude desktop** — an update button appears automatically when a new version is available.
-
-**Claude Code:**
-```
-/plugin marketplace update travel-planner-marketplace
-/plugin uninstall travel-planner@travel-planner-marketplace
-/plugin install travel-planner@travel-planner-marketplace
-```
+For general plugin and marketplace guidance, see the [official Claude Code plugin documentation](https://code.claude.com/docs/en/discover-plugins).
 
 ---
 
