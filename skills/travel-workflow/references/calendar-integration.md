@@ -1,6 +1,8 @@
 # Calendar Integration
 
-## What to Create
+The calendar is a bidirectional sync target for the travel plan (the source of truth). Export the plan's dated items as events; import existing trip events back into the plan. Confirm Claude-initiated changes with the user unless they directed the action.
+
+## What to Export
 
 **Trip event:**
 - A single event spanning the full trip (departure to return) — use specific times if known, otherwise all-day
@@ -12,11 +14,8 @@
 - Timed-entry bookings (museums, parks, tours) with known times
 - Major planned activities with confirmed times
 
-**Reminders:**
-- Offer to add reminders for time-sensitive prep tasks — e.g. "Apply for visa" weeks out, "Check in for flight" the day before. Use whichever is available: calendar, task app, or scheduled-task capability. Only skip if none are available.
-
 ## Guidelines
 
-- Only create events the user confirms
-- If dates or times aren't known yet, skip and offer to revisit once the itinerary has dates set
+- Confirm Claude-initiated changes before writing in either direction
+- If dates or times aren't known yet, skip and offer to revisit once the plan has dates set
 - Use the user's local timezone for departure events; destination timezone for arrival and in-trip events where possible

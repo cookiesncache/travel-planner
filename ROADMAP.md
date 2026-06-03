@@ -102,3 +102,20 @@ Splitwise, Tricount, YNAB, Trail Wallet — detect what's connected, use it if a
 - Add budgeting connector detection to the Required Tools section of the skill
 - Add traveler-context-aware budgeting tasks to the relevant phases (Define for budget-setting, Preparation for splitting setup)
 - Update the README under "What you need"
+
+---
+
+## Email Declined-Item Suppression
+
+Currently, if a user declines to add a booking confirmation to their plan (e.g. a tentative tour), that booking will be re-surfaced on every return session because the trigger condition ("booking absent from plan") is permanently true.
+
+### What it should do
+
+Track items the user has explicitly declined so they aren't re-surfaced. Options:
+- Store a "declined" list in the plan artifact itself
+- Let the user add a note to the plan (e.g. "Declined: [vendor] tour") that acts as a suppression signal
+- Surface declined items in a separate collapsible section rather than as active gaps
+
+### Changes required
+- Add declined-item state to the plan artifact spec in `references/itinerary-integration.md`
+- Update `references/email-integration.md` to check for declined state before surfacing

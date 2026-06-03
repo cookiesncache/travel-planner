@@ -6,9 +6,9 @@
 
 ## 🗺️ What it does
 
-Tell Claude about your trip. It'll ask what's already handled, figure out what's still ahead, and build out your task project and calendar from there.
+Tell Claude about your trip. It'll ask what's already handled, figure out what's still ahead, and build a **travel plan** — a single day-by-day record of your trip that works with or without any connected apps.
 
-Come back mid-planning and it picks up where you left off — checking your task project for progress, your calendar for new events, and your email (if connected) for new booking confirmations, before asking you anything.
+Connect your calendar, itinerary, or task apps and the plan syncs both ways: it pushes events and tasks out to them, and pulls new bookings back in. Come back mid-planning and it picks up where you left off — reconciling your connected apps and email against the plan before asking you anything.
 
 Works for any trip type:
 
@@ -28,16 +28,19 @@ Adapts based on who's traveling, whether you have kids, and what's happening wit
 
 ## 🔧 What you can connect
 
-Nothing is required — the plugin works out of the box and gets more powerful as you connect tools. Connect anything and it's used automatically on your next trip.
-
-**📋 Task management** *(recommended)* — Todoist, Things, Apple Reminders, Asana, etc.
-Where your trip tasks live. Not connected? The plugin keeps your plan as a checklist file you can save and bring back later.
+Nothing is required — your travel plan always works on its own, and connected apps are sync targets that make it more powerful. Connect anything and it's used automatically on your next trip.
 
 **📅 A calendar** *(recommended)* — Google Calendar, Outlook, Apple Calendar, etc.
-Used to block out your trip and add key events. Not connected? Key dates go into your checklist, and the plugin can set scheduled reminders for time-sensitive prep.
+Your trip's dated items sync here as events. Not connected? Key dates stay in the plan, and the plugin can set scheduled reminders for time-sensitive prep.
+
+**🗺️ An itinerary app** *(optional)* — Wanderlog, Notion, Google Docs, etc.
+A richer home for the day-by-day plan. The plugin syncs your plan there and pulls changes back.
+
+**📋 Task management** *(recommended)* — Todoist, Things, Apple Reminders, Asana, etc.
+Your trip tasks sync here. Not connected? Tasks stay in the plan as a checklist you can save and bring back later.
 
 **📬 An email app** *(optional)* — Gmail, Outlook, etc.
-If connected, the plugin scans for booking confirmations when you revisit a trip and flags anything not yet captured. Worth knowing: connecting email gives Claude access to your inbox beyond just travel confirmations.
+If connected, the plugin scans for booking confirmations and flags anything missing from your plan. Worth knowing: connecting email gives Claude access to your inbox beyond just travel confirmations.
 
 ---
 

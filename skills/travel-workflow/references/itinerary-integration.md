@@ -1,26 +1,26 @@
-# Itinerary Integration
+# The Travel Plan
 
-## What the Itinerary Is
+## What the Travel Plan Is
 
-The itinerary is the day-by-day trip plan — where the traveler is, what they're doing, and when. It is the source of truth for the travel plan — the single most capable connected itinerary tool, as determined by the capability tiers in SKILL.md Step 1.
+The travel plan is the day-by-day record of the trip — where the traveler is, what they're doing, and when. It is the **single source of truth**, generated as a structured artifact after intake and maintained throughout. It exists regardless of which tools are connected; connected itinerary apps are sync targets, not the source of truth.
 
 ## Structure
 
-Organise the itinerary by day. For each day include:
+Organize the plan by day. For each day include:
 - Date and location
 - Transport legs (departures, arrivals, transfers)
 - Accommodation (check-in / check-out)
 - Activities and bookings with times where known
 - Any relevant notes (e.g. confirmation numbers, addresses)
 
-## Connected app
+## The plan artifact
 
-If an itinerary app or notes tool is connected (Wanderlog, Notion, Google Docs, etc.), create and maintain the itinerary there. Match the app's native structure where possible.
+Always generate a markdown file named after the destination (e.g. `tokyo-itinerary.md`) — even when a connected itinerary app is present. This is the canonical copy and the local fallback. Keep it updated as the trip evolves — add new days, update activities, and note changes. Confirm updates with the user before writing them, unless the user directed the change.
 
-## No app connected
+## Syncing to a connected itinerary app
 
-Generate a markdown file named after the destination (e.g. `tokyo-itinerary.md`). Keep it updated as the trip evolves — add new days, update activities, and note any changes the user confirms.
+If an itinerary app or notes tool is connected (Wanderlog, Notion, Google Docs, etc.), offer to export the plan there in addition to the markdown artifact, matching the app's native structure where possible. Import any changes made in the app back into the plan (and update the markdown artifact accordingly). Confirm before exporting. If multiple itinerary apps are connected, ask the user which to sync to.
 
 ## Updating
 
-Only add or change what the user confirms. For returning users, update only what's changed since the last session — do not regenerate the full itinerary unless asked.
+Confirm updates before writing them, unless the user directed the change. For returning users, update only what's changed since the last session — do not regenerate the full plan unless asked.

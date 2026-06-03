@@ -11,7 +11,7 @@
     {
       "name": "travel-planner",
       "source": "./",
-      "description": "Guides Claude through planning any trip end-to-end — road trips, flights, international travel, city breaks — using a structured 5-phase workflow with optional Todoist integration."
+      "description": "Guides Claude through planning any trip end-to-end — road trips, flights, international travel, city breaks — using a 5-step workflow built around a connector-agnostic travel plan that syncs with your calendar, itinerary, and task apps."
     }
   ]
 }
