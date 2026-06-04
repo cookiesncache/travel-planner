@@ -105,3 +105,12 @@ Track items the user has explicitly declined so they aren't re-surfaced. Options
 ### Changes required
 - Add declined-item state to the plan artifact spec in `references/itinerary-integration.md`
 - Update `references/email-integration.md` to check for declined state before surfacing
+
+---
+
+## Integration file review *(low priority)*
+
+The integration reference files (`calendar-integration.md`, `task-integration.md`, `itinerary-integration.md`, etc.) have not been reviewed end-to-end by the author. A manual pass is recommended to verify that the guidance matches real-world connector behavior and that trip-type scoping (e.g. the city-break Admin items question — what to apply when a city break is also international) is correctly specified.
+
+### Changes likely required
+- `references/task-checklist.md` city-break row: clarify which Admin items apply when a city break is also international, rather than leaving "unless international" unexplained

@@ -1,17 +1,20 @@
 ---
 name: travel-workflow
 description: >
-  Plan any trip end-to-end using a 5-step workflow backed by a 5 Phase Task
-  Checklist. Use when the user says "plan my trip", "help me organize a trip",
-  "travel checklist", "what do I need for my vacation", "I'm traveling to X",
-  or asks to review or add tasks to an existing trip plan. Covers all
-  trip types: road trips, flights, international travel, city breaks, and
-  multi-destination tours.
+  This skill plans any trip end-to-end using a 5-step workflow. It applies
+  when the user says "plan my trip", "help me organize a trip", "travel
+  checklist", "what do I need for my vacation", "I'm traveling to X",
+  "I'm going to X", "I'm heading to X", "planning a trip to X",
+  "I have a trip coming up", "book a trip", "plan my vacation", "plan my
+  holiday", "planning a weekend away", "we're taking a getaway to X",
+  or asks to review or add tasks to an existing trip plan, update a travel
+  plan, check what's still missing for a trip, or says "what's left for
+  my trip" or "I'm back, let's wrap up my trip".
 ---
 
 # Travel Workflow
 
-Guide the user through planning their trip using the 5-step workflow below. The 5 Phase Task Checklist at the bottom is for scoping what's still ahead — not the workflow itself.
+Guide the user through planning their trip using the 5-step workflow below.
 
 ## The Travel Plan
 
@@ -41,7 +44,7 @@ Connected tools make the plugin more powerful; without them, the plan still stan
 
 **Email — surfaces existing bookings.** Look for any connected email tool (Gmail, Outlook, etc.). Search for booking confirmations and surface anything missing from the plan. If not connected, skip silently — do not mention it to the user.
 
-See `references/fallbacks.md` for running with no connectors. See `references/integrations.md` for how to identify which tools are connected. Once you know what's connected, proceed.
+See `references/integrations.md` for how to identify which tools are connected. Once you know what's connected, proceed.
 
 ---
 
@@ -78,7 +81,7 @@ Generate the plan from what you gathered and confirm it with the user before pro
 
 ---
 
-## Step 2 — Build the Travel Plan
+## Step 2 — Itinerary
 
 Build out the plan's day-by-day content from what was gathered in Step 1, confirming updates before writing them. Then, if an itinerary app is connected, offer to export the plan there (confirm before exporting).
 
@@ -89,8 +92,8 @@ See `references/itinerary-integration.md` for guidance.
 ## Step 3 — Schedule
 
 Export the plan's dated items to a connected calendar, and import existing trip events back into the plan. Confirm before either direction:
-- An event spanning the full trip (departure to return) — use specific times if known, otherwise all-day
-- Individual events for flights, hotel check-ins/outs, timed-entry bookings, and major planned activities
+- A trip event spanning the full trip (departure to return) — use specific times if known, otherwise all-day
+- Individual items — see `references/calendar-integration.md` for item-by-item guidance
 
 If dates aren't known yet, skip and offer to revisit once the plan has dates set.
 
@@ -102,9 +105,9 @@ See `references/calendar-integration.md` for guidance.
 
 Identify what's still ahead and not yet captured. Cross-reference the plan's tasks against:
 - What the user said is already done — exclude anything they've confirmed complete
-- The 5 Phase Task Checklist below — surface genuine gaps only
+- `references/task-checklist.md` — surface genuine gaps only
 
-Present gaps grouped by phase. Only suggest tasks for things not done in reality AND not yet in the plan. Add confirmed tasks to the plan. If a task app is connected, keep the plan and task app in sync: export plan tasks to the app and import any app tasks not yet in the plan — confirm Claude-initiated changes before writing in either direction.
+Present gaps grouped by category from `references/task-checklist.md`. Only suggest tasks for things not done in reality AND not yet in the plan. Add confirmed tasks to the plan. If a task app is connected, keep the plan and task app in sync: export plan tasks to the app and import any app tasks not yet in the plan — confirm Claude-initiated changes before writing in either direction.
 
 See `references/task-integration.md` for guidance.
 
@@ -112,16 +115,15 @@ See `references/task-integration.md` for guidance.
 
 ## Step 5 — Reminders
 
-With the full task list settled, set reminders for time-sensitive prep tasks (e.g. visa application, flight check-in). Use whichever capability is available, in order of preference: connected calendar → connected task app → scheduled-task capability. Only skip if none are available. Only set reminders the user confirms.
+With the full task list settled, offer to set reminders for time-sensitive prep tasks (e.g. visa application, flight check-in). Use whichever reminder capability is available and best fits the user's context and preferences. Only skip if none are available. Only set reminders the user confirms.
 
 If no dates are set yet, skip and offer to revisit once the plan has dates.
 
-See `references/fallbacks.md` for the no-calendar reminder path.
+See `references/reminder-integration.md` for reminder capabilities and the no-calendar path.
 
 ---
 
 ## Trip Types
-
 
 Use the trip type (inferred or confirmed in intake) to scope which checklist items are relevant:
 
@@ -162,71 +164,3 @@ Use who's traveling and pet situation to scope suggestions:
 - Add (Pre-Departure): pet supplies (food, carrier, comfort items, medication), confirm carrier meets transport requirements
 - Add (The Trip): nearest vet at destination
 
----
-
-## The 5 Phase Task Checklist
-
-### Phase 1 — Define 🧠
-
-- Confirm travel dates and duration
-- Identify destinations (and order for multi-destination trips)
-- Set a total trip budget (transport, lodging, food, activities, contingency)
-- Clarify who's traveling (solo, couple, group, children?)
-- Confirm days off work / any time constraints
-
-### Phase 2 — Preparation 📖
-
-**Transport:**
-- Book flights (check baggage allowance and seat selection)
-- Reserve rental car if driving (pickup location, vehicle class, insurance)
-- Book trains, ferries, or inter-city transport for multi-destination trips
-- Confirm airport/station transfers at origin and destination
-
-**Lodging:**
-- Book all accommodation — flag any gaps in nightly coverage
-- Confirm cancellation policies
-
-**Tickets & Passes:**
-- Book timed-entry attractions that sell out in advance
-- Purchase transit passes or city cards if applicable
-- Research any entry passes relevant to the destination
-
-**Admin (scale to trip type):**
-- Check passport validity (many countries require 6 months beyond return date)
-- Research and apply for visa if required
-- Check travel advisories for destination
-- Arrange travel insurance (especially for international trips)
-- Check vaccination or health entry requirements
-- Notify bank/credit card of travel dates and destinations
-- Obtain local currency or confirm card acceptance
-- Save copies of key documents (passport, insurance, reservations)
-- Share itinerary and emergency contacts with someone at home
-
-**Planning:**
-- Finalize daily itinerary
-- Research dining, neighborhoods, and must-do activities
-- Download offline maps for areas with limited connectivity
-- Download offline content (music, podcasts, shows) for long transit
-
-### Phase 3 — Pre-Departure 🔨
-
-- Build and finalize packing list (clothing, gear, adapters, medication, first aid)
-- Confirm all reservations 48 hours before departure
-- Check in for flights / confirm transport bookings (flight check-in usually opens 24 hrs out)
-- Charge all devices and power banks
-- Set out-of-office replies if needed
-- For road trips: inspect vehicle, check tire pressure
-
-### Phase 4 — The Trip 🚀
-
-- Track spending against budget as you go
-- Keep digital and physical copies of documents accessible
-- Note any booking issues to follow up on after returning
-
-### Phase 5 — Follow-up ✅
-
-- Return any rented vehicles or equipment; confirm no extra charges
-- Review final spend vs. budget
-- File travel insurance claims if needed
-- Save and organize photos
-- Note what worked and what to do differently next time

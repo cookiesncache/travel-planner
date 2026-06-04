@@ -46,9 +46,14 @@ If connected, the plugin scans for booking confirmations and flags anything miss
 
 ## 📥 How to install
 
-For installation instructions, see the official docs:
-- [Claude Desktop](https://code.claude.com/docs/en/desktop#install-plugins) — add a marketplace from repository `cookiesncache/travel-planner`, then install **Travel Planner**
-- Claude Code (CLI) — [add the marketplace](https://code.claude.com/docs/en/discover-plugins#add-from-github) `cookiesncache/travel-planner`, then [install](https://code.claude.com/docs/en/discover-plugins#install-plugins) `travel-planner@travel-planner-marketplace`
+- Claude Desktop — Add a marketplace from the GitHub repository `cookiesncache/claude-plugins`, then install "Travel planner"
+- Claude Code (CLI) — [Add the marketplace](https://code.claude.com/docs/en/discover-plugins#add-from-github) `cookiesncache/claude-plugins`, then [install the plugin](https://code.claude.com/docs/en/discover-plugins#install-plugins) `travel-planner@cookiesncache-marketplace`
+
+---
+
+## 🔄 How to update
+
+For update instructions, see the [official docs](https://code.claude.com/docs/en/discover-plugins#configure-auto-updates). Auto-update can be enabled per marketplace via `/plugin` → **Marketplaces** → select the marketplace → **Enable auto-update**.
 
 ---
 
