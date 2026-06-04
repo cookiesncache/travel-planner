@@ -24,27 +24,15 @@ Connected tools are **bidirectional sync targets**, never the source of truth:
 - **Import** (connector → plan): surface anything in a connected tool but missing from the plan; add it to the plan once confirmed.
 - **Export** (plan → connector): push plan data out to the relevant connected tool.
 
-**Two confirmation gates apply to changes Claude initiates on its own inference:**
-1. Confirm before **updating the travel plan**.
+**Two confirmation gates apply to changes Claude initiates:**
+1. Confirm before **updating the travel plan** — including data imported from connected tools or email, unless the user explicitly directed that action.
 2. Confirm before **exporting plan data to any connector**.
 
-When the user explicitly directs an action in the current exchange — including multi-item directives ("add all three flights," "push everything to my calendar") — act on it directly without re-confirming each item. Broad standing permissions given earlier in the session ("add any bookings you find") do not bypass per-item confirmation.
+When the user directs an action, act on it directly — do not re-confirm what was just instructed.
 
 ## Capabilities
 
-Connected tools make the plugin more powerful; without them, the plan still stands on its own as a complete, usable artifact. **Never hard-stop because a tool is missing.** When a capability is missing, mention the connect-to-save benefit **once**, then drop it — do not nudge again later in the session.
-
-**All tool use is conditional on availability — never attempt to use a tool that isn't connected.** When a connector is absent, the relevant content simply lives in the plan with no external sync.
-
-**Calendar — blocks dates and reminds you.** Look for any connected calendar (Google Calendar, Outlook, Apple Calendar, etc.). Export the trip's dated items as events; import existing trip events back into the plan.
-
-**Itinerary apps — a richer home for the day-by-day plan.** Look for any connected itinerary app, notes tool, or docs tool (Wanderlog, Notion, Google Docs, etc.). Export the plan there; import any changes back. If multiple are connected, ask the user which to sync to.
-
-**Task management — tracks what still needs to be done.** Look for any connected task tool (Todoist, Things, Apple Reminders, Asana, TickTick, etc.). Export the plan's tasks; import existing tasks back.
-
-**Email — surfaces existing bookings.** Look for any connected email tool (Gmail, Outlook, etc.). Search for booking confirmations and surface anything missing from the plan. If not connected, skip silently — do not mention it to the user.
-
-See `references/integrations.md` for how to identify which tools are connected. Once you know what's connected, proceed.
+See `references/capabilities.md` for all available tools and session capabilities. All tool use is conditional on availability — never hard-stop because a tool is missing. When a capability is missing, mention the connect-to-save benefit **once**, then drop it.
 
 ---
 
@@ -54,11 +42,19 @@ Before asking the user anything — and again whenever they ask to update their 
 
 ### Returning user (travel plan already exists)
 
-**1.1 Reconstruct the travel plan.** Rebuild the current plan from the prior plan artifact, connected tools, and the conversation. Present it to the user and get explicit confirmation before proceeding — do not begin reconciling or writing until the user approves the baseline. If multiple distinct trips are found, ask which one they mean before proceeding. If no plan or trip data can be found anywhere, surface this explicitly and ask whether to start fresh.
+**1.1 Reconcile the travel plan.**
+
+1. **Resolve ambiguity first.** If multiple distinct trips are found, ask which one they mean. If no plan or trip data can be found anywhere, surface this explicitly and ask whether to start fresh.
+2. **Reconcile.** Update the plan from the prior artifact, connected tools, and the conversation — updating only what has changed.
+3. **Confirm the baseline.** Present the plan to the user and get explicit confirmation before proceeding — do not begin writing until the user approves.
+4. **Route by trip dates:**
+   - Trip is in the future → run the full workflow (Steps 2–5)
+   - Trip is in progress → Steps 2, 3, 4 (scoped to The Trip tasks), then Step 5
+   - Trip has fully passed → go to Step 4, scoped to the Follow-up checklist
 
 **1.2 Reconcile connectors against the plan.** Cross-reference findings from all connected tools and email against the plan:
 - **Surface gaps** — if a booking or event appears in a connector or email but is missing from the plan, surface it; add it to the plan once confirmed.
-- **Deduplicate** — if something already appears in the plan, do not surface it again regardless of which tool it also appears in.
+- **Deduplicate** — the plan is the deduplication anchor. If something already appears in the plan, do not surface it again regardless of which connector also has it.
 
 See `references/email-integration.md` for email-specific guidance.
 
@@ -67,6 +63,8 @@ Only ask about what genuinely can't be inferred. Summarize what you found, then 
 > "Looks like you're flying to Tokyo in September — solo trip, flights and hotel already in your plan. Found a new tour confirmation in your email that's not captured yet. Want me to add it and check what else is still ahead?"
 
 ### First-time user (no travel plan yet)
+
+If email is connected, search for booking confirmations matching the trip and surface anything not yet captured before generating the baseline plan.
 
 Gather intake, then generate the baseline travel plan. Only ask for what can't be inferred from connected tools or the conversation:
 - **Destination and dates** — infer from the user's message if possible
@@ -83,7 +81,11 @@ Generate the plan from what you gathered and confirm it with the user before pro
 
 ## Step 2 — Itinerary
 
-Build out the plan's day-by-day content from what was gathered in Step 1, confirming updates before writing them. Then, if an itinerary app is connected, offer to export the plan there (confirm before exporting).
+Build out the plan's day-by-day content from what was gathered in Step 1, confirming updates before writing them.
+
+**Always generate a named markdown file** for the plan (e.g. `tokyo-itinerary.md`) — even when a connected itinerary app is present. Use lowercase, hyphens for spaces, strip special characters; for multiple destinations use the first or primary. For returning users, update the existing file in place — do not regenerate from scratch.
+
+If an itinerary app is connected, offer to export the plan there in addition to the markdown file (confirm before exporting).
 
 See `references/itinerary-integration.md` for guidance.
 
@@ -91,19 +93,15 @@ See `references/itinerary-integration.md` for guidance.
 
 ## Step 3 — Schedule
 
-Export the plan's dated items to a connected calendar, and import existing trip events back into the plan. Confirm before either direction:
-- A trip event spanning the full trip (departure to return) — use specific times if known, otherwise all-day
-- Individual items — see `references/calendar-integration.md` for item-by-item guidance
+Export the plan's dated items to a connected calendar, and import existing trip events back into the plan. Confirm before either direction. If dates aren't known yet, skip and offer to revisit once the plan has dates set.
 
-If dates aren't known yet, skip and offer to revisit once the plan has dates set.
-
-See `references/calendar-integration.md` for guidance.
+See `references/calendar-integration.md` for full guidance.
 
 ---
 
 ## Step 4 — Tasks
 
-Identify what's still ahead and not yet captured. Cross-reference the plan's tasks against:
+If a task app is connected, import tasks from it — for returning users this includes syncing status changes for tasks already in the plan. For first-time users, task context was already loaded in Step 1. Then identify what's still ahead and not yet captured. Cross-reference the plan's tasks against:
 - What the user said is already done — exclude anything they've confirmed complete
 - `references/task-checklist.md` — surface genuine gaps only
 
@@ -115,11 +113,11 @@ See `references/task-integration.md` for guidance.
 
 ## Step 5 — Reminders
 
-With the full task list settled, offer to set reminders for time-sensitive prep tasks (e.g. visa application, flight check-in). Use whichever reminder capability is available and best fits the user's context and preferences. Only skip if none are available. Only set reminders the user confirms.
+With the full task list settled, offer to set reminders for time-sensitive prep tasks (e.g. visa application, flight check-in). Use whichever reminder capability is available and best fits the user's context and preferences. If none are available, note it in the plan. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 applies).
 
 If no dates are set yet, skip and offer to revisit once the plan has dates.
 
-See `references/reminder-integration.md` for reminder capabilities and the no-calendar path.
+See `references/reminder-integration.md` for reminder guidance.
 
 ---
 
@@ -160,7 +158,6 @@ Use who's traveling and pet situation to scope suggestions:
 - Note: surface pet care explicitly — do not bury it in generic "home care" tasks
 
 **Pets — coming along:**
-- Add (Preparation): pet-friendly lodging, transport pet policy and fees, health certificate and vaccination records, vet check, pet-friendly activities at destination
+- Add (Preparation): pet-friendly lodging, transport pet policy and fees, health certificate and vaccination records, vet check, pet-friendly activities at destination, locate nearest vet at destination
 - Add (Pre-Departure): pet supplies (food, carrier, comfort items, medication), confirm carrier meets transport requirements
-- Add (The Trip): nearest vet at destination
 

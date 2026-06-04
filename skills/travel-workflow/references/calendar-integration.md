@@ -14,7 +14,7 @@ The calendar is a bidirectional sync target for the travel plan (the source of t
 
 **Hotel check-ins** — not a timed event; export as an all-day marker on the check-in date. The associated prep actions (confirm reservation, arrange transport, collect keys) belong as tasks in Step 4, not as calendar events.
 
-**Hotel check-outs** — export as a task with a hard deadline (e.g. "Check out by 11am"), not a calendar event. Route to Step 4.
+**Hotel check-outs** — add to the plan as a task with a hard deadline (e.g. "Check out by 11am"), not a calendar event.
 
 **Major planned activities with confirmed times** — export as calendar events.
 
@@ -23,4 +23,4 @@ The calendar is a bidirectional sync target for the travel plan (the source of t
 - Confirm Claude-initiated plan updates (gate 1) before importing; confirm exports to the calendar (gate 2) before creating events
 - When importing, skip any event already reflected in the plan — do not surface it again
 - If dates or times aren't known yet, skip and offer to revisit once the plan has dates set
-- Use the user's local timezone for departure events; destination timezone for arrival and in-trip events where possible
+- Use the departure city timezone for departure events and the destination timezone for arrival and in-trip events. If the departure timezone can't be inferred, ask the user. If the destination timezone can't be inferred, use UTC and note it in the event

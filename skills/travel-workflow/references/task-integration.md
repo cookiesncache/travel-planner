@@ -10,11 +10,13 @@ Identify which task management tool is connected. Common options: Todoist, Thing
 
 ## Finding or Creating the Travel Project
 
-Search for an existing project matching the trip (by destination name, "trip", "travel", or similar). If none exists, offer to create one named after the destination or trip.
+Search for an existing project matching the trip (by destination name, "trip", "travel", or similar). If multiple match, surface them and ask the user to pick before proceeding. If none exists, offer to create one named after the destination or trip.
 
 ## Auditing Tasks
 
-Start from the plan's tasks as the source of truth. Cross-reference against the connected task app to pick up any tasks that exist there but aren't yet in the plan — add those to the plan first, preserving their completion status (completed tasks are added as closed, not open). Then map all tasks against `task-checklist.md`, identify which categories have no coverage, and present gaps clearly grouped by category. Explain why each gap matters in the context of the specific trip type — don't just list missing tasks.
+**Step 1 — Import first.** Before auditing, complete the import from the task app into the plan: pull any tasks that exist in the app but aren't yet in the plan, preserving their completion status (completed tasks are added as closed, not open). Also sync status changes for tasks already in both places — if a task is open in the plan but completed in the app, update the plan's status to match. Batch all status changes into a single summary and ask for one confirmation before writing (gate 1 applies). This must be finished before gap analysis begins.
+
+**Step 2 — Audit.** With the plan now reflecting all known tasks, map them against `task-checklist.md`. Identify which categories have no coverage and present gaps clearly grouped by category. Explain why each gap matters in the context of the specific trip type — don't just list missing tasks.
 
 Example output format:
 
@@ -34,6 +36,10 @@ When the user confirms, create tasks with:
 ## Adding Sections
 
 If the project has no sections, offer to add them using the category names from `task-checklist.md` (Define, Preparation, Pre-Departure, The Trip, Follow-up). Do not embed dates or months in section names.
+
+## Syncing Completions
+
+When the user marks a task complete during the session — in the plan or conversation — export that status change to the task app (gate 2 applies; confirm before writing to the app).
 
 ## Using the Connected App
 

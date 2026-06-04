@@ -48,6 +48,9 @@ Use this as a reference when auditing trip tasks. Map existing tasks against the
 - Save copies of key documents (passport, insurance, reservations)
 - Share itinerary and emergency contacts with someone at home
 
+**Pets (if traveling with pets):**
+- Verify pet-friendly lodging and transport policy; obtain health certificate and vaccination records; locate nearest vet at destination
+
 **Planning:**
 - Finalize daily itinerary
 - Research dining, neighborhoods, and must-do activities
@@ -57,7 +60,7 @@ Use this as a reference when auditing trip tasks. Map existing tasks against the
 ## Pre-Departure
 
 - Build and finalize packing list (clothing, gear, adapters, medication, first aid)
-- Confirm all reservations 48 hours before departure
+- Confirm all reservations 48 hours before departure — including accommodation check-out times and any associated fees
 - Check in for flights / confirm transport bookings (flight check-in usually opens 24 hrs out)
 - Charge all devices and power banks
 - Set out-of-office replies if needed
@@ -65,6 +68,7 @@ Use this as a reference when auditing trip tasks. Map existing tasks against the
 
 ## The Trip
 
+- Check out of accommodation by the specified deadline (e.g. "Check out by 11am") — confirm no extra charges
 - Track spending against budget as you go
 - Keep digital and physical copies of documents accessible
 - Note any booking issues to follow up on after returning

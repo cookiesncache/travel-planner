@@ -30,11 +30,11 @@ Adapts based on who's traveling, whether you have kids, and what's happening wit
 
 Nothing is required — your travel plan always works on its own, and connected apps are sync targets that make it more powerful. Connect anything and it's used automatically on your next trip.
 
-**📅 A calendar** *(recommended)* — Google Calendar, Outlook, Apple Calendar, etc.
-Your trip's dated items sync here as events. Not connected? Key dates stay in the plan, and the plugin can set scheduled reminders for time-sensitive prep.
-
 **🗺️ An itinerary app** *(optional)* — Wanderlog, Notion, Google Docs, etc.
 A richer home for the day-by-day plan. The plugin syncs your plan there and pulls changes back.
+
+**📅 A calendar** *(recommended)* — Google Calendar, Outlook, Apple Calendar, etc.
+Your trip's dated items sync here as events. Not connected? Key dates stay in the plan.
 
 **📋 Task management** *(recommended)* — Todoist, Things, Apple Reminders, Asana, etc.
 Your trip tasks sync here. Not connected? Tasks stay in the plan as a checklist you can save and bring back later.
