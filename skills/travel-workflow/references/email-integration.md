@@ -21,6 +21,8 @@ Where possible, narrow searches by looking for confirmations whose content refer
 
 When a booking is captured to the plan as confirmed, add a Spending Tracker row for it — see `itinerary-integration.md` for the row format and total/remaining handling. Use the amount from the confirmation if present; if absent, follow the unknown-amount handling there. Do not add a tracker row for bookings that are not captured as confirmed (e.g. payment-rejected).
 
+If the confirmed booking fulfills an open task (e.g. a flight confirmation fulfills "Book flights"), follow the completion-sync rule in `task-integration.md` — ask the user, then call the app's completion action.
+
 Handle each confirmation according to its state:
 - **Valid confirmation** — offer to add it to the plan (gate 1 applies for Claude-initiated additions; user-directed additions act directly). Once captured, add its Spending Tracker row.
 - **Structurally incomplete** (missing return leg, no confirmation number) — flag the gap before adding; do not add silently

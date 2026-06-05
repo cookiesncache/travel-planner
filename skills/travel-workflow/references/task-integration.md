@@ -39,11 +39,16 @@ If the project has no sections, offer to add them using the category names from 
 
 ## Syncing Completions
 
-When the user marks a task complete during the session — in the plan or conversation — export that status change to the task app (gate 2 applies; confirm before writing to the app).
+Completions flow to the task app in two cases:
+
+- **User marks a task complete** during the session (in the plan or conversation) — export that status change to the task app (gate 2 applies; confirm before writing).
+- **A confirmed booking fulfills an open task** — when a booking is confirmed and updated in the plan (e.g. a flight confirmation fulfills "Book flights"), ask the user before marking the corresponding task complete in the task app.
+
+In both cases, **actually complete the task — call the app's completion action** (e.g. `complete-tasks` in Todoist). Do not simulate completion by renaming the task, adding a checkmark, or striking through the title. The task must be genuinely closed in the app.
 
 ## Using the Connected App
 
 Use whichever tools the connected task app exposes. Typical patterns:
 - **Retrieve tasks:** use the app's project overview or task list tool, scoped to the travel project
 - **Create tasks:** use the app's task creation tool with the project ID, a due date where relevant, and a brief description for context
-- **Complete tasks:** use the app's task completion or status-update tool when the plan marks an item done
+- **Complete tasks:** use the app's dedicated completion action (e.g. `complete-tasks`) — never a title edit — when a task is done

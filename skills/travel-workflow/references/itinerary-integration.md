@@ -5,7 +5,7 @@
 Organize the plan by day. For each day include:
 - Date and location
 - Transport legs (departures, arrivals, transfers)
-- Accommodation (check-in only — check-outs are tasks with hard deadlines, not itinerary entries)
+- Accommodation (both check-in and check-out dates)
 - Activities and bookings with times where known
 - Any relevant notes (e.g. confirmation numbers, addresses)
 
