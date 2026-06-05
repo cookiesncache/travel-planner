@@ -64,6 +64,9 @@ Use this as a reference when auditing trip tasks. Map existing tasks against the
 - Check in for flights / confirm transport bookings (flight check-in usually opens 24 hrs out)
 - Charge all devices and power banks
 - Set out-of-office replies if needed
+
+**Pets (if traveling with pets):**
+- Pack pet supplies (food, carrier, comfort items, medication); confirm carrier meets transport requirements
 - For road trips: inspect vehicle, check tire pressure
 
 ## The Trip

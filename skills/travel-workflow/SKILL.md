@@ -42,21 +42,15 @@ Before asking the user anything — and again whenever they ask to update their 
 
 ### Returning user (travel plan already exists)
 
-**1.1 Reconcile the travel plan.**
+Reconcile the travel plan:
 
 1. **Resolve ambiguity first.** If multiple distinct trips are found, ask which one they mean. If no plan or trip data can be found anywhere, surface this explicitly and ask whether to start fresh.
-2. **Reconcile.** Update the plan from the prior artifact, connected tools, and the conversation — updating only what has changed.
+2. **Reconcile against connectors and email.** Cross-reference findings from all connected tools and email against the plan. Surface a booking or event only if it isn't already in the plan — the plan is the deduplication anchor, so something already captured is not re-surfaced no matter how many connectors also have it. Add surfaced items once confirmed. See `references/email-integration.md` for email-specific guidance.
 3. **Confirm the baseline.** Present the plan to the user and get explicit confirmation before proceeding — do not begin writing until the user approves.
 4. **Route by trip dates:**
    - Trip is in the future → run the full workflow (Steps 2–5)
    - Trip is in progress → Steps 2, 3, 4 (scoped to The Trip tasks), then Step 5
    - Trip has fully passed → go to Step 4, scoped to the Follow-up checklist
-
-**1.2 Reconcile connectors against the plan.** Cross-reference findings from all connected tools and email against the plan:
-- **Surface gaps** — if a booking or event appears in a connector or email but is missing from the plan, surface it; add it to the plan once confirmed.
-- **Deduplicate** — the plan is the deduplication anchor. If something already appears in the plan, do not surface it again regardless of which connector also has it.
-
-See `references/email-integration.md` for email-specific guidance.
 
 Only ask about what genuinely can't be inferred. Summarize what you found, then proceed with Steps 2–5 only where an update is needed:
 
@@ -71,6 +65,7 @@ Gather intake, then generate the baseline travel plan. Only ask for what can't b
 - **Trip type** — infer from destination and transport (e.g. "driving to the coast" → road trip, "flying to Tokyo" → international)
 - **Who's traveling** — solo, couple, group, family with kids (and ages if relevant)
 - **Pets** — coming along or staying home
+- **Budget** — the total trip budget, if the user has one in mind. Feeds the Spending Tracker's budget and remaining figures. If they don't have one, leave it unset (the tracker omits those rows until a budget is established).
 - **What's already booked** — use any context already loaded from connected tools; ask only for what isn't already known. Capture as free text (e.g. "flights booked, hotel sorted, nothing else yet")
 
 Generate the plan from what you gathered and confirm it with the user before proceeding.
@@ -83,11 +78,11 @@ Generate the plan from what you gathered and confirm it with the user before pro
 
 Build out the plan's day-by-day content from what was gathered in Step 1, confirming updates before writing them.
 
-**Always generate a named markdown file** for the plan (e.g. `tokyo-itinerary.md`) — even when a connected itinerary app is present. Use lowercase, hyphens for spaces, strip special characters; for multiple destinations use the first or primary. For returning users, update the existing file in place — do not regenerate from scratch.
+**Always generate a named markdown file** for the plan (e.g. `tokyo-itinerary.md`) — even when a connected itinerary app is present. Include a Spending Tracker section; populate it automatically whenever a booking is confirmed, and recalculate the running total and remaining budget. Use lowercase, hyphens for spaces, strip special characters; for multiple destinations use the first or primary. For returning users, update the existing file in place — do not regenerate from scratch.
 
 If an itinerary app is connected, offer to export the plan there in addition to the markdown file (confirm before exporting).
 
-See `references/itinerary-integration.md` for guidance.
+See `references/itinerary-integration.md` for guidance, including the fallback if the prior markdown file cannot be located.
 
 ---
 
@@ -103,7 +98,7 @@ See `references/calendar-integration.md` for full guidance.
 
 If a task app is connected, import tasks from it — for returning users this includes syncing status changes for tasks already in the plan. For first-time users, task context was already loaded in Step 1. Then identify what's still ahead and not yet captured. Cross-reference the plan's tasks against:
 - What the user said is already done — exclude anything they've confirmed complete
-- `references/task-checklist.md` — surface genuine gaps only
+- `references/task-checklist.md` — surface genuine gaps only; for post-trip sessions scope to the Follow-up category only
 
 Present gaps grouped by category from `references/task-checklist.md`. Only suggest tasks for things not done in reality AND not yet in the plan. Add confirmed tasks to the plan. If a task app is connected, keep the plan and task app in sync: export plan tasks to the app and import any app tasks not yet in the plan — confirm Claude-initiated changes before writing in either direction.
 
@@ -113,7 +108,7 @@ See `references/task-integration.md` for guidance.
 
 ## Step 5 — Reminders
 
-With the full task list settled, offer to set reminders for time-sensitive prep tasks (e.g. visa application, flight check-in). Use whichever reminder capability is available and best fits the user's context and preferences. If none are available, note it in the plan. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 applies).
+With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. Use whichever reminder capability is available and best fits the user's context and preferences. If none are available, note it in the plan. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 applies).
 
 If no dates are set yet, skip and offer to revisit once the plan has dates.
 
@@ -158,6 +153,5 @@ Use who's traveling and pet situation to scope suggestions:
 - Note: surface pet care explicitly — do not bury it in generic "home care" tasks
 
 **Pets — coming along:**
-- Add (Preparation): pet-friendly lodging, transport pet policy and fees, health certificate and vaccination records, vet check, pet-friendly activities at destination, locate nearest vet at destination
-- Add (Pre-Departure): pet supplies (food, carrier, comfort items, medication), confirm carrier meets transport requirements
+- Surface pet-specific tasks from `references/task-checklist.md` across Preparation and Pre-Departure
 

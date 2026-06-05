@@ -19,7 +19,9 @@ Where possible, narrow searches by looking for confirmations whose content refer
 - Cross-reference against the travel plan: surface a booking if it is not yet in the plan, regardless of whether it appears in any other connected tool. If it's already in the plan, don't re-surface it.
 - For anything missing, offer to add it to the plan (including confirmation number). Once confirmed, offer to export to the relevant connectors.
 
+When a booking is captured to the plan as confirmed, add a Spending Tracker row for it — see `itinerary-integration.md` for the row format and total/remaining handling. Use the amount from the confirmation if present; if absent, follow the unknown-amount handling there. Do not add a tracker row for bookings that are not captured as confirmed (e.g. payment-rejected).
+
 Handle each confirmation according to its state:
-- **Valid confirmation** — offer to add it to the plan (gate 1 applies for Claude-initiated additions; user-directed additions act directly)
+- **Valid confirmation** — offer to add it to the plan (gate 1 applies for Claude-initiated additions; user-directed additions act directly). Once captured, add its Spending Tracker row.
 - **Structurally incomplete** (missing return leg, no confirmation number) — flag the gap before adding; do not add silently
-- **Payment rejected or declined** — confirm with the user before making any changes, then flag the corresponding booking in the plan as "needs attention" and create a task to resolve it; do not add as a confirmed booking. If no matching booking is found in the plan, surface the rejected confirmation to the user with a summary and ask whether to add a placeholder task to investigate.
+- **Payment rejected or declined** — confirm with the user before making any changes, then flag the corresponding booking in the plan as "needs attention" and create a task to resolve it; do not add as a confirmed booking and do not add a Spending Tracker row. If no matching booking is found in the plan, surface the rejected confirmation to the user with a summary and ask whether to add a placeholder task to investigate.

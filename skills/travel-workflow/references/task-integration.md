@@ -16,7 +16,7 @@ Search for an existing project matching the trip (by destination name, "trip", "
 
 **Step 1 — Import first.** Before auditing, complete the import from the task app into the plan: pull any tasks that exist in the app but aren't yet in the plan, preserving their completion status (completed tasks are added as closed, not open). Also sync status changes for tasks already in both places — if a task is open in the plan but completed in the app, update the plan's status to match. Batch all status changes into a single summary and ask for one confirmation before writing (gate 1 applies). This must be finished before gap analysis begins.
 
-**Step 2 — Audit.** With the plan now reflecting all known tasks, map them against `task-checklist.md`. Identify which categories have no coverage and present gaps clearly grouped by category. Explain why each gap matters in the context of the specific trip type — don't just list missing tasks.
+**Step 2 — Audit.** With the plan now reflecting all known tasks, map them against `task-checklist.md`. For post-trip sessions, scope the audit to the Follow-up category only. Identify which categories have no coverage and present gaps clearly grouped by category. Explain why each gap matters in the context of the specific trip type — don't just list missing tasks.
 
 Example output format:
 
