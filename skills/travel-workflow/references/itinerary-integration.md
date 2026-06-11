@@ -20,14 +20,16 @@ Format:
 ```markdown
 ## Spending Tracker
 
-| Item | Amount | Confirmation # |
-|---|---|---|
-| Tokyo flight (JAL 123) | $450 | ABC123 |
-| Hotel Shinjuku (3 nights) | $600 | XYZ789 |
-| **Total spent** | **$1,050** | |
-| **Trip budget** | **$3,000** | |
-| **Remaining** | **$1,950** | |
+| ID | Item | Amount | Confirmation # |
+|---|---|---|---|
+| tyo-bk1 | Tokyo flight (JAL 123) | $450 | ABC123 |
+| tyo-bk2 | Hotel Shinjuku (3 nights) | $600 | XYZ789 |
+| | **Total spent** | **$1,050** | |
+| | **Trip budget** | **$3,000** | |
+| | **Remaining** | **$1,950** | |
 ```
+
+The ID column uses the same item IDs as the plan body and the Sync State ledger (see `sync-protocol.md`) — the tracker is the money view, Sync State is the sync view, joined by ID.
 
 - **Amount known** — record it in the row.
 - **Amount unknown** (not in the confirmation, or imported from a connector that carries no price) — add the row with the Amount left blank and confirm the amount with the user. Until an amount is provided, exclude that row from the Total (do not count it as $0) and note that unpriced bookings exist, so Remaining is never silently wrong.
@@ -36,10 +38,10 @@ Format:
 
 ## Syncing to a connected itinerary app
 
-If an itinerary app or notes tool is connected (Wanderlog, Notion, Google Docs, etc.), offer to export the plan there in addition to the markdown file, matching the app's native structure where possible. Import any changes made in the app back into the plan (and update the markdown file accordingly). Confirm before exporting. If multiple itinerary apps are connected, ask the user which to sync to.
+If an itinerary app or notes tool is connected (Wanderlog, Notion, Google Docs, etc.), offer to export the plan there in addition to the markdown file, matching the app's native structure where possible. Import any changes made in the app back into the plan (and update the markdown file accordingly). Gates and Sync State recording: see `sync-protocol.md`. If multiple itinerary apps are connected, ask the user which to sync to and record the choice in the state file.
 
 ## Updating
 
-Confirm updates before writing them, unless the user directed the change. For returning users, update only what's changed — do not regenerate the full plan unless asked.
+Gate 1 applies to Claude-initiated updates (see `sync-protocol.md`). For returning users, update only what's changed — do not regenerate the full plan unless asked.
 
-If the prior markdown file cannot be located in the current session, ask the user whether to regenerate it from context and connected tools, or start the first-time flow from scratch.
+If the prior markdown file cannot be located in the current session, check `.claude/travel-planner.local.md` first — it records the plan file path (see `sync-protocol.md`). If it's missing too, ask the user whether to regenerate the plan from context and connected tools, or start the first-time flow from scratch.

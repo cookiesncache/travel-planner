@@ -24,11 +24,9 @@ Connected tools are **bidirectional sync targets**, never the source of truth:
 - **Import** (connector → plan): surface anything in a connected tool but missing from the plan; add it to the plan once confirmed.
 - **Export** (plan → connector): push plan data out to the relevant connected tool.
 
-**Two confirmation gates apply to changes Claude initiates:**
-1. Confirm before **updating the travel plan** — including data imported from connected tools or email, unless the user explicitly directed that action.
-2. Confirm before **exporting plan data to any connector**.
+**Two confirmation gates apply to changes Claude initiates** — gate 1: confirm before updating the travel plan; gate 2: confirm before exporting plan data to any connector. When the user directs an action, act on it directly — do not re-confirm what was just instructed. The canonical gate definitions, the plan's **Sync State** ledger, the item ID scheme, and all recording rules live in `references/sync-protocol.md` — read it before any import or export.
 
-When the user directs an action, act on it directly — do not re-confirm what was just instructed.
+Two plugin hooks enforce this protocol: an **export gate** before connector writes and a **sync-back check** before ending a turn. If a hook blocks an action, do what its reason says — confirm with the user or record in Sync State — rather than retrying the same call.
 
 ## Capabilities
 
@@ -44,13 +42,13 @@ Before asking the user anything — and again whenever they ask to update their 
 
 Reconcile the travel plan:
 
-1. **Resolve ambiguity first.** If multiple distinct trips are found, ask which one they mean. If no plan or trip data can be found anywhere, surface this explicitly and ask whether to start fresh.
-2. **Reconcile against connectors and email.** Cross-reference findings from all connected tools and email against the plan. Surface a booking or event only if it isn't already in the plan — the plan is the deduplication anchor, so something already captured is not re-surfaced no matter how many connectors also have it. Add surfaced items once confirmed. See `references/email-integration.md` for email-specific guidance.
+1. **Resolve ambiguity first.** Read `.claude/travel-planner.local.md` if it exists — it names the active trip and plan file (see `references/sync-protocol.md`). If multiple distinct trips are found, ask which one they mean. If no plan or trip data can be found anywhere, surface this explicitly and ask whether to start fresh.
+2. **Reconcile against connectors and email.** Cross-reference findings from all connected tools and email against the plan. Surface a booking or event only if it isn't already in the plan — the plan is the deduplication anchor: match against Sync State remote IDs, and never re-surface anything with a `declined` row. Add surfaced items once confirmed. See `references/email-integration.md` for email-specific guidance.
 3. **Confirm the baseline.** Present the plan to the user and get explicit confirmation before proceeding — do not begin writing until the user approves.
 4. **Route by trip dates:**
    - Trip is in the future → run the full workflow (Steps 2–5)
    - Trip is in progress → Steps 2, 3, 4 (scoped to The Trip tasks), then Step 5
-   - Trip has fully passed → go to Step 4, scoped to the Follow-up checklist
+   - Trip has fully passed → go to Step 4, scoped to the Follow-up checklist; when Follow-up wraps up, set `status: done` in the state file
 
 Only ask about what genuinely can't be inferred. Summarize what you found, then proceed with Steps 2–5 only where an update is needed:
 
@@ -80,6 +78,8 @@ Build out the plan's day-by-day content from what was gathered in Step 1, confir
 
 **Always generate a named markdown file** for the plan (e.g. `tokyo-itinerary.md`) — even when a connected itinerary app is present. Include a Spending Tracker section; populate it automatically whenever a booking is confirmed, and recalculate the running total and remaining budget. Use lowercase, hyphens for spaces, strip special characters; for multiple destinations use the first or primary. For returning users, update the existing file in place — do not regenerate from scratch.
 
+Every plan file ends with a `## Sync State` section, and every item carries an inline ID (see `references/sync-protocol.md`). The moment the plan file is created or located, write or update `.claude/travel-planner.local.md` per the protocol — it marks the trip active and lets future sessions find the plan.
+
 If an itinerary app is connected, offer to export the plan there in addition to the markdown file (confirm before exporting).
 
 See `references/itinerary-integration.md` for guidance, including the fallback if the prior markdown file cannot be located.
@@ -88,7 +88,7 @@ See `references/itinerary-integration.md` for guidance, including the fallback i
 
 ## Step 3 — Schedule
 
-Export the plan's dated items to a connected calendar, and import existing trip events back into the plan. Confirm before either direction. If dates aren't known yet, skip and offer to revisit once the plan has dates set.
+Export the plan's dated items to a connected calendar, and import existing trip events back into the plan. Gates and Sync State recording per `references/sync-protocol.md`. If dates aren't known yet, skip and offer to revisit once the plan has dates set.
 
 See `references/calendar-integration.md` for full guidance.
 
@@ -100,7 +100,7 @@ If a task app is connected, import tasks from it — for returning users this in
 - What the user said is already done — exclude anything they've confirmed complete
 - `references/task-checklist.md` — surface genuine gaps only; for post-trip sessions scope to the Follow-up category only
 
-Present gaps grouped by category from `references/task-checklist.md`. Only suggest tasks for things not done in reality AND not yet in the plan. Add confirmed tasks to the plan. If a task app is connected, keep the plan and task app in sync: export plan tasks to the app and import any app tasks not yet in the plan — confirm Claude-initiated changes before writing in either direction.
+Present gaps grouped by category from `references/task-checklist.md`. Only suggest tasks for things not done in reality AND not yet in the plan. Add confirmed tasks to the plan. If a task app is connected, keep the plan and task app in sync: export plan tasks to the app and import any app tasks not yet in the plan — gates and Sync State recording per `references/sync-protocol.md`.
 
 See `references/task-integration.md` for guidance.
 
@@ -108,7 +108,7 @@ See `references/task-integration.md` for guidance.
 
 ## Step 5 — Reminders
 
-With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. Use whichever reminder capability is available and best fits the user's context and preferences. If none are available, note it in the plan. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 applies).
+With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. Use whichever reminder capability is available and best fits the user's context and preferences. If none are available, note it in the plan. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 — see `references/sync-protocol.md`); record set reminders in Sync State.
 
 If no dates are set yet, skip and offer to revisit once the plan has dates.
 

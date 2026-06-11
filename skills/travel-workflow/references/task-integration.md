@@ -1,6 +1,6 @@
 # Task App Integration
 
-Tasks always live in the travel plan (the source of truth) — with or without a connected task app. If a task app is connected, keep the plan and task app in sync: export plan tasks to the app, import any app tasks not yet in the plan. Confirm Claude-initiated plan updates (gate 1) and exports to the task app (gate 2) with the user unless they directed the action. If no task app is connected, tasks stay in the plan only.
+Tasks always live in the travel plan (the source of truth) — with or without a connected task app. If a task app is connected, keep the plan and task app in sync: export plan tasks to the app, import any app tasks not yet in the plan. Gates and Sync State recording: see `sync-protocol.md`. If no task app is connected, tasks stay in the plan only.
 
 ## Finding the Right App
 
@@ -14,7 +14,7 @@ Search for an existing project matching the trip (by destination name, "trip", "
 
 ## Auditing Tasks
 
-**Step 1 — Import first.** Before auditing, complete the import from the task app into the plan: pull any tasks that exist in the app but aren't yet in the plan, preserving their completion status (completed tasks are added as closed, not open). Also sync status changes for tasks already in both places — if a task is open in the plan but completed in the app, update the plan's status to match. Batch all status changes into a single summary and ask for one confirmation before writing (gate 1 applies). This must be finished before gap analysis begins.
+**Step 1 — Import first.** Before auditing, complete the import from the task app into the plan: pull any tasks that exist in the app but aren't yet in the plan, preserving their completion status (completed tasks are added as closed, not open). A task whose remote ID already appears in the plan's Sync State is already imported — only its status may need reconciling. Also sync status changes for tasks already in both places — if a task is open in the plan but completed in the app, update the plan's status to match. Batch all status changes into a single summary and ask for one confirmation before writing (gate 1 — see `sync-protocol.md`); record imports and status changes in Sync State as part of the same write. This must be finished before gap analysis begins.
 
 **Step 2 — Audit.** With the plan now reflecting all known tasks, map them against `task-checklist.md`. For post-trip sessions, scope the audit to the Follow-up category only. Identify which categories have no coverage and present gaps clearly grouped by category. Explain why each gap matters in the context of the specific trip type — don't just list missing tasks.
 
@@ -33,6 +33,8 @@ When the user confirms, create tasks with:
 - A due date where the task has a natural deadline
 - A brief description for any task that benefits from context
 
+After the batch, record each created task's ID in the plan's Sync State table per `sync-protocol.md`.
+
 ## Adding Sections
 
 If the project has no sections, offer to add them using the category names from `task-checklist.md` (Define, Preparation, Pre-Departure, The Trip, Follow-up). Do not embed dates or months in section names.
@@ -41,8 +43,10 @@ If the project has no sections, offer to add them using the category names from 
 
 Completions flow to the task app in two cases:
 
-- **User marks a task complete** during the session (in the plan or conversation) — export that status change to the task app (gate 2 applies; confirm before writing).
+- **User marks a task complete** during the session (in the plan or conversation) — export that status change to the task app (gate 2 — see `sync-protocol.md`).
 - **A confirmed booking fulfills an open task** — when a booking is confirmed and updated in the plan (e.g. a flight confirmation fulfills "Book flights"), ask the user before marking the corresponding task complete in the task app.
+
+Either way, update the task's Sync State row (Last action) in the same step.
 
 In both cases, **actually complete the task — call the app's completion action** (e.g. `complete-tasks` in Todoist). Do not simulate completion by renaming the task, adding a checkmark, or striking through the title. The task must be genuinely closed in the app.
 

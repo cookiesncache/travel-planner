@@ -1,5 +1,18 @@
 # Roadmap
 
+## v0.7.0 Pre-Release Verification
+
+The v0.7.0 hooks (export gate, sync-back check) are prompt-based and rely on a few runtime behaviors worth verifying once with `claude --debug` — ideally on a Windows machine — before tagging the release:
+
+- [ ] Both hooks register at session start (`/hooks` shows them; no schema errors)
+- [ ] The PreToolUse matcher fires on a real connector write (e.g. Todoist `add-tasks`) and does NOT fire on reads (`find-tasks`, `list_events`)
+- [ ] In a non-travel session, a matched write resolves via the fast-path allow with no visible friction
+- [ ] Gate flow works end-to-end: unconfirmed export → deny → Claude confirms with user → retry → allow
+- [ ] Stop hook blocks when an export was made but not recorded in Sync State, and approves after recording (no block loop)
+- [ ] Known gaps to re-check against real connectors occasionally: write tools whose names don't start with a matched verb (e.g. `project-move`) bypass the gate — prose still covers them
+
+---
+
 ## ~~Skill Review (Pre-Release)~~ ✅ Archived
 
 All concerns resolved through v0.3.0. Architecture settled on a single orchestrating skill with a plan-centric source of truth, connector-agnostic bidirectional sync, and explicit confirmation gates on all Claude-initiated changes.
@@ -32,6 +45,7 @@ Given the current travel plan and trip context (destination, dates), the agent s
 - Add `agents/booking-intel/AGENT.md` defining the agent, its inputs (plan + trip context), and its output schema
 - Update `SKILL.md` Step 1.2 to call the agent instead of pointing to `email-integration.md` inline
 - Update `references/email-integration.md` to describe agent behavior and output schema
+- **Add a SubagentStop hook mirroring the Stop sync-back check** in the same release — the v0.7.0 Stop hook only fires for the main agent, so an agent that imports bookings would otherwise bypass sync-back enforcement
 
 ---
 
@@ -91,20 +105,9 @@ Attach a `.zip` of the plugin directory to each GitHub release so users can inst
 
 ---
 
-## Email Declined-Item Suppression
+## ~~Email Declined-Item Suppression~~ ✅ Resolved in v0.7.0
 
-Currently, if a user declines to add a booking confirmation to their plan (e.g. a tentative tour), that booking will be re-surfaced on every return session because the trigger condition ("booking absent from plan") is permanently true.
-
-### What it should do
-
-Track items the user has explicitly declined so they aren't re-surfaced. Options:
-- Store a "declined" list in the plan artifact itself
-- Let the user add a note to the plan (e.g. "Declined: [vendor] tour") that acts as a suppression signal
-- Surface declined items in a separate collapsible section rather than as active gaps
-
-### Changes required
-- Add declined-item state to the plan artifact spec in `references/itinerary-integration.md`
-- Update `references/email-integration.md` to check for declined state before surfacing
+Resolved by the Sync State ledger (`references/sync-protocol.md`): declining a surfaced booking writes a `declined` row, and email/connector reconciliation checks Sync State before surfacing anything. Declined items are suppressed permanently unless the user asks.
 
 ---
 
