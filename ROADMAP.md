@@ -25,7 +25,7 @@ The hook prompts are LLM-evaluated, so their *logic* needs scenario testing, not
 
 **PreToolUse gate (export gate):**
 - [ ] **G1 — plugin meta-session** where a matched write tool fires → **allow** (activation excludes discussing/developing the plugin)
-- [ ] **G2 — unconfirmed Claude-initiated travel export** → **deny**
+- [ ] **G2 — active-trip travel export with no prior chat confirmation** → **ask** (v0.7.2 gate never denies; the native prompt is where the user declines if unwanted)
 - [ ] **G3 — unrelated write** (groceries to Todoist) mid-travel-session → **allow**
 - [ ] **G4 — ambiguous/compacted** — no clear trip active → **allow** (fast-path 1)
 - [ ] **G5 — active trip, travel connector write** → **ask** (native harness prompt appears; user approves → write proceeds; user denies → write blocked)
@@ -132,6 +132,47 @@ Given the current travel plan and trip context (destination, dates), the agent s
 - Update `SKILL.md` Step 1.2 to call the agent instead of pointing to `email-integration.md` inline
 - Update `references/email-integration.md` to describe agent behavior and output schema
 - **Add a SubagentStop hook mirroring the Stop sync-back check** in the same release — the v0.7.0 Stop hook only fires for the main agent, so an agent that imports bookings would otherwise bypass sync-back enforcement
+
+---
+
+## Itinerary Feasibility Check (pre-booking pacing review) *(High priority)*
+
+From a field user story (`USER_STORY_travel-planner-feasibility-check.md`): a 9-day California road trip was fully booked before anyone checked whether the day-to-day schedule was physically realistic. A later drive-time review found a "sightseeing" day that was really a ~7–8.5 h transit day (Joshua Tree → Yosemite), a compressed coast leg (Mendocino → Big Sur), a departure-day backtrack past the airport, and a geographically inconsistent lodging label. Because everything was booked, these could only be *managed*, not *fixed*. The check must run **before** booking, while rebalancing nights and base towns is still cheap.
+
+### What it does
+On a draft itinerary, estimate per-leg drive time/distance and per-stop time, then flag: over-packed driving days; "sightseeing" days that are really transit; rushed or under-used stops; geographically inconsistent lodging / departure-day backtracks. Every finding carries a confidence level + sources and at least one concrete rebalancing option (move a night, change a base town, reorder stops), framed as still-cheap-to-change.
+
+### Where it runs
+A checkpoint at the **end of Step 2 (Itinerary)**, before Step 3/Step 4 generate scheduling and "book X" tasks — never only after bookings are confirmed. Auto-run for **road trip** and **multi-destination** trips (and any trip with inter-stop driving); offer it (lighter: intra-day/transfer feasibility) for flight/city-break trips. For a returning user whose trip is already booked, still run it but frame findings as *manage-only* — and note that pre-booking is the right time.
+
+### Data source (pivotal constraint — verified this session)
+There is **no maps/routing/directions connector** available, and the only distance-ish tool (Uber `get_estimates_between_two_locations_claude`) is unusable here — immediate-ride-only, refuses future dates, returns a booking widget. So estimates come from **WebSearch/WebFetch** (typical drive times, with citations) — preferred, and it satisfies the "sources + confidence" criterion — falling back to model geographic knowledge flagged **low confidence** when search is unavailable or inconclusive. If a routing connector is added later, the agent should prefer it.
+
+### Why an agent
+Like the Booking Intel Agent, this is noisy multi-step work (per-leg searches, threshold checks, geo reasoning). A dedicated **Feasibility Check Agent** absorbs the noise and returns a clean structured digest. It is **read-only** (reads the plan; makes no connector or plan writes), so it needs no Stop/SubagentStop sync-back hook. Reusable as a standalone `/check` command.
+
+Output schema (sketch):
+```
+{ days: [ { date, label,
+    legs: [ { from, to, driveTime, distanceMi, confidence, sources[] } ],
+    totalDriveTime,
+    flags: [ { type: over-packed-driving | mislabeled-transit | rushed-stop | underused-stop | geo-inconsistent-lodging | departure-day-backtrack, detail, confidence, sources[] } ],
+    rebalanceOptions: [ string ] } ],
+  overallVerdict, confidence }
+```
+
+### Thresholds (defaults, tunable in the reference file)
+Heavy driving day > ~5 h; effectively-transit > ~7 h. A "sightseeing"/activity label whose drive time dominates usable daytime → mislabel. Stop time below a typical minimum for the stop type → rushed; a marquee destination with far more time than planned use → under-used. Lodging far from the day's activity cluster, or routing that backtracks past the destination/airport → geo-inconsistent / backtrack.
+
+### Changes required
+- Add `agents/feasibility-check/AGENT.md` — inputs (draft itinerary days/stops/lodging + trip context), the output schema, instructions to estimate via WebSearch with citations and fall back to flagged low-confidence estimates.
+- Add `references/feasibility-integration.md` — leg definition, flag types, thresholds, rebalancing-option patterns, manage-vs-fix framing for already-booked trips.
+- `SKILL.md` Step 2: add the feasibility checkpoint (trip-type gated; agent hand-off; resolve or accept findings before proceeding).
+- `references/task-checklist.md`: under Planning, fold the feasibility check into "Finalize daily itinerary," and keep booking tasks (Preparation) after it.
+- README + this ROADMAP.
+
+### Definition of done
+Validated against the California example: independently surfaces the Sep 21 Joshua Tree → Yosemite transit-day, the Sep 27 Mendocino → Big Sur compression, the Sep 28 departure-day backtrack, and the inconsistent lodging label — each with confidence, sources, and ≥1 rebalancing option — and presents them **before** the booking step.
 
 ---
 
