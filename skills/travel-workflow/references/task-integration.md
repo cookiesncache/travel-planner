@@ -6,7 +6,7 @@ Tasks always live in the travel plan (the source of truth) — with or without a
 
 Check whether a task management tool is connected before proceeding with any sync operations. If none is connected, task work stays in the plan only — skip the rest of this file.
 
-Identify which task management tool is connected. Common options: Todoist, Things, Apple Reminders, Asana, TickTick. Use whichever is available. If multiple are connected, ask the user which they'd like to use for this trip.
+Identify which task management tool is connected. Common options: Todoist, Things, Apple Reminders, Asana, TickTick. Use whichever is available. If multiple are connected, ask the user which they'd like to use for this trip, and record the choice in the state file (see `sync-protocol.md`).
 
 ## Finding or Creating the Travel Project
 

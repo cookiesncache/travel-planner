@@ -30,6 +30,11 @@ The hook prompts are LLM-evaluated, so their *logic* needs scenario testing, not
 - [ ] **G4 — unrelated write** (groceries to Todoist) mid-travel-session → **allow**
 - [ ] **G5 — ambiguous/compacted, confirmation not visible** → **deny** (fail closed)
 - [ ] **G6 — scoped sync-debt**: a prior unrecorded *trip-data* write + new travel export → **deny**; but a prior unrecorded *grocery* write + new travel export → **allow** *(P0-4: unrelated writes are not debt)*
+- [ ] **G7 — approval via AskUserQuestion**: user selects the proposed items in a multi-select (no typed prose) → next `add-tasks`/export → **allow** *(field incident P0-5)*
+- [ ] **G8 — terse confirmation**: Claude proposes specific writes, user replies "do it" → **allow**, including a single-item retry afterward *(field incident P0-5)*
+- [ ] **G9 — no deadlock**: a write the gate denied, or one approved-but-not-yet-made, must not cause the Stop hook to block the turn *(field incident P0-5)*
+
+> ⚠️ **Harness dependency for G7/G8:** these prose fixes only work if the gate's prompt-evaluator actually *receives* AskUserQuestion tool results and the most recent user turn in its context. The field report flagged (unconfirmed) that it may not. Verify this first with `claude --debug` — if the evaluator can't see those inputs, no prompt wording fixes it, and the fallback is to not gate when an AskUserQuestion selection was the approval mechanism (lean on the Stop hook + Sync State recording instead).
 
 ---
 
@@ -37,7 +42,7 @@ The hook prompts are LLM-evaluated, so their *logic* needs scenario testing, not
 
 Whole-plugin review after the v0.7.0 refactor (consistency, workflow, and hook-correctness lenses, each finding adversarially verified). 16 issues, deduplicated and ranked. Fix **P0** before promoting v0.7.0 to users; **P1** are logic gaps that break advertised behavior; **P2** are honesty/polish. Each item cites the file to change.
 
-### P0 — Correctness bugs  ✅ all four fixed in working tree (for v0.7.1)
+### P0 — Correctness bugs  ✅ all fixed in working tree (for v0.7.1) — P0-1–4 from the review, P0-5 from a field incident
 
 **P0-1 · Stop-hook fast-path approves unrecorded exports** *(bug; found independently by all 3 lenses)* — ✅ **fixed:** approve-condition 2 now keys on whether trip-data writes *happened* this session (not plan-edit recency), with an explicit note that a later plan edit does not imply the rows exist — so the row-existence verification always runs.
 `hooks/hooks.json` Stop prompt, approve-condition 2 keys on *recency* ("no connector writes since the plan file was last updated"), not *content*. The most likely failure — Claude updates the plan body but omits the `## Sync State` rows in that same or a later edit — makes the condition literally true, so the deep check that looks for rows never runs. This defeats the exact invariant the hook exists to enforce (`sync-protocol.md`: "an export is not complete until its row exists"). *Fix:* approve only if every connector write this session already has a matching Sync State row (and no approved imports are unwritten); delete the "since the plan file was last updated" clause.
@@ -50,6 +55,9 @@ Whole-plugin review after the v0.7.0 refactor (consistency, workflow, and hook-c
 
 **P0-4 · Gate sync-debt clause is unscoped and exemption-free** *(bug)*
 `hooks/hooks.json` PreToolUse "ADDITIONALLY DENY … earlier connector writes … never recorded" (a) doesn't restrict "earlier writes" to trip data, so an allowed unrelated write (e.g. groceries to Todoist mid-session) becomes phantom debt that false-blocks the next user-directed travel export; (b) lacks the Stop hook's exemptions (user declined recording; plan file missing), so it deadlocks against them. ✅ **fixed:** the clause now scopes debt to writes "OF TRIP DATA," and exempts unrelated writes, user-declined recording, and a known-missing plan file — mirroring the Stop hook's exemptions.
+
+**P0-5 · Gate false-denies a user-confirmed write; deadlocks with the Stop hook** *(bug; field incident, BUG_REPORT_travel-planner-export-gate.md, 2026-06-11)*
+A returning user approved 4 Todoist tasks twice — an AskUserQuestion multi-select, then a plain-text "do it" — and the export gate denied the `add-tasks` write 4 times with the generic gate-2 reason, then the v0.7.0 Stop hook trapped the turn (approved tasks "unwritten"). Two causes: gate rule 3 only recognized prose confirmation, so an AskUserQuestion selection and a terse "do it" weren't registered, and the fail-closed tail then denied; and the Stop hook blocked on approved-but-unwritten changes. ✅ **fixed:** gate rule 3 now explicitly counts (a) direction in the user's words, (b) an AskUserQuestion item selection, and (c) a brief affirmative after a specific proposal — weighting the most recent user turn and not dismissing it for brevity; the fail-closed tail no longer denies for brevity/selection/batch form. The Stop-hook deadlock was already removed by P0-1 (only *writes that happened* are debt) and is now stated explicitly — a denied/failed/not-yet-made write is never debt, so the two hooks can't deadlock. **Caveat:** the gate fix depends on the prompt-evaluator actually receiving AskUserQuestion results + the latest user turn — confirm with `claude --debug` (see G7/G8 caveat in the verification section).
 
 ### P1 — Logic gaps that break advertised behavior  *(5 of 7 fixed in working tree; P1-3 and P1-5 remain)*
 
@@ -74,16 +82,16 @@ The returning-user route sends a passed trip to Step 4 only; deadline-bound Foll
 **P1-7 · Stop-hook blind spots: compaction and user veto** *(gap; merges two findings)* — ✅ fixed
 (a) No compaction guard — the gate fails closed on truncated history, but the Stop fast-path *approves* on the same blindness, ending a turn with unrecorded exports invisible. (b) Condition 3 lets the user veto recording, breaking the ledger invariant with no recovery path. ✅ **partly fixed:** compaction guard added to the Stop prompt (block-once + re-read instruction; the anti-loop rule prevents a second block). This work also fixed a related flaw caught while testing the hook live — **both hooks over-triggered their "active travel session" detection on mere discussion/reading/development of the plugin** (a plugin-dev or support session looked like a live trip), and the **Stop prompt could return a non-decision** ("insufficient evidence in transcript") instead of approve/block. Both hooks now lead with "did a real connector write of trip data actually happen this session," explicitly exclude discussing/developing/supporting the plugin, and the Stop prompt is forced to resolve to exactly one decision with a default-approve on residual doubt. ✅ **now fully fixed:** a recording-veto leaves a minimal `untracked` Sync State row (new status; item + connector + remote ID, no Spending Tracker row, no day-by-day detail) — it honors "don't track it in my plan" while giving reconciliation the remote ID it needs so the connector item isn't re-surfaced as new next session.
 
-### P2 — Honesty & polish
+### P2 — Honesty & polish  *(3 of 5 fixed in working tree; P2-4 and P2-5 remain)*
 
 **P2-1 · GUI/computer-use connectors bypass both hooks** *(gap)*
-Apple Calendar/Reminders/Things on Desktop are driven via computer-use, whose tool names never match `mcp__`. The README overclaims "before Claude writes to any connected app." *Fix (cheap):* scope the README and `hooks.json` description honestly to MCP connectors, and have `sync-protocol.md`'s "never work around a hook" rule name GUI/browser/Bash paths as prose-gate-2 territory.
+Apple Calendar/Reminders/Things on Desktop are driven via computer-use, whose tool names never match `mcp__`. The README overclaimed "before Claude writes to any connected app." ✅ **fixed:** the README and `hooks.json` description are scoped honestly to MCP connectors (with a note that screen-driven apps fall back to the prose confirm-first rule), and `sync-protocol.md`'s "never work around a hook" rule now states that non-MCP write paths (screen, browser, shell) are gate-2 prose territory, not mechanically gated.
 
 **P2-2 · "No-op instantly" overstates hook cost** *(improvement)*
-Both hooks are prompt (LLM) evaluations; the Stop check runs at the end of *every* turn in *every* enabled session. *Fix:* reword `hooks.json` description and README to "resolve via a fast-path allow," and note that infrequent travelers can disable the plugin between trips.
+Both hooks are prompt (LLM) evaluations; the Stop check runs at the end of *every* turn in *every* enabled session. ✅ **fixed:** `hooks.json` description and README now say the hooks "resolve via a fast-path allow," and the README notes the small per-turn cost and that infrequent travelers can disable the plugin between trips.
 
 **P2-3 · `task-integration.md` missing the state-file recording line** *(improvement)*
-Two of three sibling integration files tell Claude to record the chosen app in the state file; `task-integration.md`'s multiple-apps sentence doesn't. *Fix:* append "and record the choice in the state file (see `sync-protocol.md`)," mirroring the calendar/itinerary files; optionally also `capabilities.md`.
+Two of three sibling integration files tell Claude to record the chosen app in the state file; `task-integration.md`'s multiple-apps sentence didn't. ✅ **fixed:** added the recording clause to `task-integration.md` and to the central multiple-tools rule in `capabilities.md`.
 
 **P2-4 · Dangling plan-file pointer has no handler** *(gap)*
 The regenerate fallback only fires when *both* the plan file and state file are missing; state-file-present-but-`plan_file`-path-dangling has no instruction. *Fix:* one sentence in `itinerary-integration.md` — if the state file's `plan_file` doesn't resolve, surface it and ask to regenerate or relocate.

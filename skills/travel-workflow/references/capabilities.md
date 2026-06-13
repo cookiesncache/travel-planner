@@ -2,7 +2,7 @@
 
 Everything Claude can use during a session. Check what's available before proceeding.
 
-If multiple tools of the same type are connected, ask the user which one to sync to for this trip.
+If multiple tools of the same type are connected, ask the user which one to sync to for this trip, and record the choice in the state file (see `sync-protocol.md`).
 
 ## Itinerary
 

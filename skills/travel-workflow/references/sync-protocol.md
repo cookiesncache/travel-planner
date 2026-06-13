@@ -25,7 +25,7 @@ When a hook blocks you, do what its reason says — then retry:
 - Gate-2 deny → present the exact change and app to the user, get their yes, retry the call.
 - Sync-back deny/block → record the writes in Sync State (and update the plan body / Spending Tracker), then retry or finish.
 
-Never retry the same call unchanged, and never work around a hook by switching to a different tool.
+Never retry the same call unchanged, and never work around a hook by switching to a different tool. The hooks only see MCP tool calls, so writes Claude makes another way — controlling an app's screen, a browser, or a shell — are not mechanically gated; the gate-2 confirm-first rule still applies to them in full, by prose.
 
 ## Sync State section
 

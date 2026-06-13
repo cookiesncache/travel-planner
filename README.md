@@ -48,12 +48,13 @@ If connected, the plugin scans for booking confirmations and flags anything miss
 
 Two built-in hooks enforce the plan-is-source-of-truth rule mechanically — no setup needed:
 
-- **Export gate** — before Claude writes to any connected app, the hook checks that you actually confirmed the change. If you didn't, Claude is stopped and asks you first.
+- **Export gate** — when Claude is about to write to a connected app, the hook checks that you actually confirmed the change; if you didn't, Claude is stopped and asks you first. (This covers apps Claude reaches through their MCP tools. A few apps Claude drives by controlling the screen instead aren't caught by the hook — the same confirm-first rule still applies there, just without the mechanical backstop.)
 - **Sync-back check** — before Claude finishes a turn, the hook verifies that everything it pushed to or pulled from your apps is recorded back in the travel plan, so the plan never silently drifts behind.
 
-Both hooks stand down instantly in sessions where you aren't travel planning. Your plan file carries a **Sync State** section — a small ledger of what's synced where (and what you've declined, so it's never suggested again).
+In sessions where you aren't travel planning, both hooks resolve right away via a fast allow and let Claude carry on. Your plan file carries a **Sync State** section — a small ledger of what's synced where (and what you've declined, so it's never suggested again).
 
 Worth knowing:
+- The hooks run a quick check each turn, so they add a little latency even outside travel planning. If you travel only occasionally, you can disable the plugin between trips and re-enable it when you need it.
 - The plugin keeps a small state file at `.claude/travel-planner.local.md` in your project so it can find your trip across sessions. If the project is a git repository, add `*.local.md` to `.gitignore`.
 - After installing or updating the plugin, start a fresh session — hooks load at session start.
 
