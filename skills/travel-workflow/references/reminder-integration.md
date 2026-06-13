@@ -18,4 +18,4 @@ These are different capability types, so the "multiple tools of the same type" r
 - **Exactly one available** — use it.
 - **More than one available** — ask the user which they'd like to use for reminders. Do not pick for them based on a default or assumed preference. Record their choice in the state file (a `reminders:` entry under `connectors` — see `sync-protocol.md`) so later sessions don't re-ask.
 
-Record each reminder you set in the plan's ## Sync State as an `rm`-type item (see `sync-protocol.md`).
+Record reminders set in a **connected app** (a calendar alert or a task-app due-dated task) in the plan's ## Sync State as an `rm`-type item (see `sync-protocol.md`). **Scheduled-task reminders are exempt:** the in-session scheduled-task capability is not a connected app, so it has no place in the connector ledger — note those in the plan body instead (e.g. a short line under the relevant day), not in ## Sync State.
