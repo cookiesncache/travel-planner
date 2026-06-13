@@ -52,7 +52,7 @@ Use this as a reference when auditing trip tasks. Map existing tasks against the
 - Verify pet-friendly lodging and transport policy; obtain health certificate and vaccination records; locate nearest vet at destination
 
 **Planning:**
-- Finalize daily itinerary
+- Finalize daily itinerary — run the feasibility/pacing check (see `feasibility-integration.md`) before any Preparation booking tasks, so an unrealistic schedule is caught while it's still cheap to rebalance
 - Research dining, neighborhoods, and must-do activities
 - Download offline maps for areas with limited connectivity
 - Download offline content (music, podcasts, shows) for long transit

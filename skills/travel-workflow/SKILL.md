@@ -84,6 +84,8 @@ If an itinerary app is connected, offer to export the plan there in addition to 
 
 See `references/itinerary-integration.md` for guidance, including the fallback if the prior markdown file cannot be located.
 
+**Feasibility checkpoint (before booking).** Once the day-by-day plan exists — and before Steps 3–4 generate scheduling and "book X" tasks — check that the schedule is physically realistic, while rebalancing is still cheap. Run automatically for road-trip and multi-destination trips (offer it otherwise). Use the `feasibility-check` agent: give it the plan file and trip context; it returns drive-time and pacing findings with confidence and sources. Present them to the user and let them rebalance (move a night, change a base town, reorder stops) or accept the trade-offs before proceeding. See `references/feasibility-integration.md`.
+
 ---
 
 ## Step 3 — Schedule

@@ -128,14 +128,14 @@ Given the current travel plan and trip context (destination, dates), the agent s
 
 ### Changes required
 
-- Add `agents/booking-intel/AGENT.md` defining the agent, its inputs (plan + trip context), and its output schema
+- Add `agents/booking-intel.md` defining the agent, its inputs (plan + trip context), and its output schema *(flat `agents/<name>.md` — the auto-discovered convention; not a nested `AGENT.md`)*
 - Update `SKILL.md` Step 1.2 to call the agent instead of pointing to `email-integration.md` inline
 - Update `references/email-integration.md` to describe agent behavior and output schema
 - **Add a SubagentStop hook mirroring the Stop sync-back check** in the same release — the v0.7.0 Stop hook only fires for the main agent, so an agent that imports bookings would otherwise bypass sync-back enforcement
 
 ---
 
-## Itinerary Feasibility Check (pre-booking pacing review) *(High priority)*
+## Itinerary Feasibility Check (pre-booking pacing review) *(High priority)* — ✅ implemented (pending live validation)
 
 From a field user story (`USER_STORY_travel-planner-feasibility-check.md`): a 9-day California road trip was fully booked before anyone checked whether the day-to-day schedule was physically realistic. A later drive-time review found a "sightseeing" day that was really a ~7–8.5 h transit day (Joshua Tree → Yosemite), a compressed coast leg (Mendocino → Big Sur), a departure-day backtrack past the airport, and a geographically inconsistent lodging label. Because everything was booked, these could only be *managed*, not *fixed*. The check must run **before** booking, while rebalancing nights and base towns is still cheap.
 
@@ -165,14 +165,14 @@ Output schema (sketch):
 Heavy driving day > ~5 h; effectively-transit > ~7 h. A "sightseeing"/activity label whose drive time dominates usable daytime → mislabel. Stop time below a typical minimum for the stop type → rushed; a marquee destination with far more time than planned use → under-used. Lodging far from the day's activity cluster, or routing that backtracks past the destination/airport → geo-inconsistent / backtrack.
 
 ### Changes required
-- Add `agents/feasibility-check/AGENT.md` — inputs (draft itinerary days/stops/lodging + trip context), the output schema, instructions to estimate via WebSearch with citations and fall back to flagged low-confidence estimates.
-- Add `references/feasibility-integration.md` — leg definition, flag types, thresholds, rebalancing-option patterns, manage-vs-fix framing for already-booked trips.
-- `SKILL.md` Step 2: add the feasibility checkpoint (trip-type gated; agent hand-off; resolve or accept findings before proceeding).
-- `references/task-checklist.md`: under Planning, fold the feasibility check into "Finalize daily itinerary," and keep booking tasks (Preparation) after it.
-- README + this ROADMAP.
+- ✅ Added `agents/feasibility-check.md` — read-only agent (Read/Grep/Glob/WebSearch/WebFetch), inputs, output schema, WebSearch-with-citations + low-confidence fallback. *(Flat `agents/<name>.md` — that is the auto-discovered convention; a nested `agents/<name>/AGENT.md` would NOT load.)*
+- ✅ Added `references/feasibility-integration.md` — leg definition, flag types, thresholds, rebalancing patterns, manage-vs-fix framing.
+- ✅ `SKILL.md` Step 2 — feasibility checkpoint (trip-type gated; agent hand-off; resolve or accept findings before proceeding).
+- ✅ `references/task-checklist.md` — folded the check into "Finalize daily itinerary," ahead of Preparation booking tasks.
+- ✅ README — pre-booking feasibility note.
 
-### Definition of done
-Validated against the California example: independently surfaces the Sep 21 Joshua Tree → Yosemite transit-day, the Sep 27 Mendocino → Big Sur compression, the Sep 28 departure-day backtrack, and the inconsistent lodging label — each with confidence, sources, and ≥1 rebalancing option — and presents them **before** the booking step.
+### Definition of done *(pending — needs a live session with WebSearch)*
+Validate against the California example: the agent must independently surface the Sep 21 Joshua Tree → Yosemite transit-day, the Sep 27 Mendocino → Big Sur compression, the Sep 28 departure-day backtrack, and the inconsistent lodging label — each with confidence, sources, and ≥1 rebalancing option — and present them **before** the booking step.
 
 ---
 

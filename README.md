@@ -22,6 +22,8 @@ Works for any trip type:
 
 Adapts based on who's traveling, whether you have kids, and what's happening with your pets.
 
+🧭 For road trips and multi-stop trips, it runs a **feasibility check before you book** — estimating drive times and flagging over-packed days, "sightseeing" days that are really transit, and base towns that don't match the day's plan, with sources and concrete rebalancing options. Catch the unrealistic days while moving a night is still free, not after the hotels are paid for.
+
 ✨ Connectors are detected automatically at the start of each session — add one anytime and the plugin will start using it on your next trip. Switch apps by disconnecting the old one and connecting the new one; no reconfiguration needed.
 
 ---
