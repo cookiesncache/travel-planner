@@ -47,7 +47,7 @@ Every plan file ends with a `## Sync State` section: one table, one row per (ite
 (`tyo-bk4` was surfaced from email, so it has no remote ID; `tyo-tk3` was surfaced from Todoist, so its app name and remote ID are kept — that ID is what suppresses it next session.)
 
 - **Connector** is the human app name (Google Calendar, Todoist) — never the `mcp__<server>__` segment of a tool name; server names can be opaque and session-specific.
-- **Status** is one of: `synced` (plan and connector agree) · `pending` (confirmed in the plan, not yet exported) · `stale` (remote change detected, not yet reconciled into the plan body) · `declined` (user said no — never re-surface or export) · `needs-attention` (problem item, e.g. payment rejected — see `email-integration.md`).
+- **Status** is one of: `synced` (plan and connector agree) · `pending` (approved but not yet exported — or an export that was deferred or failed before returning a remote ID) · `stale` (remote change detected, not yet reconciled into the plan body) · `declined` (user rejected the item — never re-surface or export) · `untracked` (item lives in a connector but the user declined recording it in the plan — kept only so reconciliation won't re-surface it) · `needs-attention` (problem item, e.g. payment rejected — see `email-integration.md`).
 
 ## Item IDs
 
@@ -56,15 +56,17 @@ Every plan file ends with a `## Sync State` section: one table, one row per (ite
 ## Recording rules
 
 - **Export:** after the connector call(s), add or update one row per item per connector with the remote ID the connector returned, Last action `exported <date>`, Status `synced`. An export is not complete until its row exists — this is the invariant the sync-back hook checks.
+- **Pending (deferred or failed export):** if the user approves an export but it is deferred ("push it once the dates firm up") or a connector call fails before returning a remote ID, write the row now with Remote ID `—`, Last action `confirmed for export <date>` (or `export failed <date>`), Status `pending`. When the export later succeeds, update the same row to the returned remote ID, Last action `exported <date>`, Status `synced`. A `pending` row does **not** authorize a silent export later: one carried over from a previous session must be re-confirmed with the user before the call, since the export gate cannot see a past session's approval.
 - **Batches:** one user approval covers the whole batch it describes; one Sync State update after the batch is correct — do not interleave a plan write between every call.
 - **Import:** assign a new ID, add the item to the plan body, add a row with the source connector and remote ID, Last action `imported <date>`, Status `synced`.
 - **Status change** (completion pushed or pulled, remote edit reconciled): update Last action; Status stays `synced`. If a remote change is detected but not yet reconciled into the plan body, set `stale` until it is.
-- **Decline:** when the user says no to a surfaced booking or task, add a row with Last action `declined by user <date>`, Status `declined`. **Record the source Connector and Remote ID if the item came from a connector** (a declined Todoist task or calendar event keeps its app name and remote ID) — that ID is the suppression key. Use Connector/Remote ID `—` only for email- or user-surfaced items that have no remote ID. Before surfacing anything from email or a connector, check Sync State: a declined row suppresses it permanently unless the user asks.
-- **Dedup on import:** an item whose remote ID already appears in Sync State is already handled — if the matching row is `declined`, suppress it (do not re-surface); otherwise reconcile its status. Do not re-surface it.
+- **Decline:** when the user says no to a surfaced booking or task, add a row with Last action `declined by user <date>`, Status `declined`. **Record the source Connector and Remote ID if the item came from a connector** (a declined Todoist task or calendar event keeps its app name and remote ID) — that ID is the suppression key. Use Connector/Remote ID `—` only for email- or user-surfaced items that have no remote ID. If a decline happens during first-time intake **before the plan file exists**, remember it and write its declined row when the plan file is created (Step 2). Before surfacing anything from email or a connector, check Sync State: a declined row suppresses it permanently unless the user asks.
+- **Recording declined (untracked):** if the user accepts an item in a connector but declines having it recorded in the plan ("don't bother tracking that here"), still add a minimal row — item, connector, remote ID, Last action `not tracked per user <date>`, Status `untracked` — with no Spending Tracker row and no day-by-day detail. This honors the request (no itinerary clutter, no spend row) while giving reconciliation the remote ID it needs so the item isn't re-surfaced as new next session.
+- **Dedup on import:** an item whose remote ID already appears in Sync State is already handled — if the matching row is `declined` or `untracked`, suppress it (do not re-surface); otherwise reconcile its status. Do not re-surface it.
 
 ## Spending Tracker interaction
 
-The Spending Tracker's first column is the item ID, joined to Sync State (see `itinerary-integration.md` for the format). Capturing a confirmed booking writes plan body, tracker row, and Sync State row in one authorized write. Declined and needs-attention items never get tracker rows.
+The Spending Tracker's first column is the item ID, joined to Sync State (see `itinerary-integration.md` for the format). Capturing a confirmed booking writes plan body, tracker row, and Sync State row in one authorized write. Declined, untracked, and needs-attention items never get tracker rows.
 
 ## The state file
 
@@ -74,18 +76,27 @@ The Spending Tracker's first column is the item ID, joined to Sync State (see `i
 ---
 plugin: travel-planner
 active_trip: tokyo-2026-09
-trip_code: tyo
-plan_file: tokyo-itinerary.md
-status: planning   # planning | in-trip | done
-connectors:
-  calendar: Google Calendar
-  tasks: Todoist
-updated: 2026-06-10
+trips:
+  - id: tokyo-2026-09
+    trip_code: tyo
+    plan_file: tokyo-itinerary.md
+    status: planning      # planning | in-trip | done
+    connectors:
+      calendar: Google Calendar
+      tasks: Todoist
+  - id: lisbon-2026-07
+    trip_code: lis
+    plan_file: lisbon-itinerary.md
+    status: done
+    connectors:
+      calendar: Google Calendar
+updated: 2026-06-13
 ---
 ```
 
-- **Write it** (ordinary Write tool) the moment the plan file is created or located in Step 2; **update it** when the plan filename, trip status, or connector choices change; set `status: done` when Follow-up wraps up. Record the user's app choice under `connectors` when they pick one — that name is what Sync State's Connector column uses.
-- **Never delete it** — it doubles as the returning-user pointer: Step 1 intake reads it to find the active trip and plan file instead of guessing. Starting a new trip overwrites it.
+- **Write it** (ordinary Write tool) as soon as a trip is identified in intake — at the latest when the plan file is created. **Update it** when a plan filename, trip status, or connector choice changes; set a trip's `status: done` when its Follow-up wraps up. Record the user's app choice under that trip's `connectors` when they pick one — that name is what Sync State's Connector column uses.
+- **One entry per trip — never overwrite or delete entries.** Starting a new trip *appends* a new entry and repoints `active_trip`; it does not replace the previous trip, whose entry stays so its plan file remains discoverable. `active_trip` is the trip the current session is working on, and the default when the user doesn't say which.
+- **It doubles as the returning-user pointer:** Step 1 reads the `trips` list to find each trip's plan file instead of guessing.
 - Users should gitignore `*.local.md` (README note).
 
 ## After compaction

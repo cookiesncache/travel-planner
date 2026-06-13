@@ -42,13 +42,13 @@ Before asking the user anything — and again whenever they ask to update their 
 
 Reconcile the travel plan:
 
-1. **Resolve ambiguity first.** Read `.claude/travel-planner.local.md` if it exists — it names the active trip and plan file (see `references/sync-protocol.md`). If multiple distinct trips are found, ask which one they mean. If no plan or trip data can be found anywhere, surface this explicitly and ask whether to start fresh.
+1. **Resolve ambiguity first.** Read `.claude/travel-planner.local.md` if it exists — its `trips` list names every known trip and its plan file, with `active_trip` as the default (see `references/sync-protocol.md`). If the request could match more than one trip, ask which they mean. If the state file is missing, scan the project directory for `*-itinerary.md` plan files before concluding there's nothing. Only if none is found anywhere, surface this explicitly and ask whether to start fresh.
 2. **Reconcile against connectors and email.** Cross-reference findings from all connected tools and email against the plan. Surface a booking or event only if it isn't already in the plan — the plan is the deduplication anchor: match against Sync State remote IDs, and never re-surface anything with a `declined` row. Add surfaced items once confirmed. See `references/email-integration.md` for email-specific guidance.
 3. **Confirm the baseline.** Present the plan to the user and get explicit confirmation before proceeding — do not begin writing until the user approves.
 4. **Route by trip dates:**
    - Trip is in the future → run the full workflow (Steps 2–5)
    - Trip is in progress → Steps 2, 3, 4 (scoped to The Trip tasks), then Step 5
-   - Trip has fully passed → go to Step 4, scoped to the Follow-up checklist; when Follow-up wraps up, set `status: done` in the state file
+   - Trip has fully passed → Steps 4 and 5, scoped to the Follow-up checklist (deadline-bound follow-ups — insurance-claim windows, equipment returns — still get reminders); when Follow-up wraps up, set that trip's `status: done` in the state file
 
 Only ask about what genuinely can't be inferred. Summarize what you found, then proceed with Steps 2–5 only where an update is needed:
 
@@ -56,7 +56,7 @@ Only ask about what genuinely can't be inferred. Summarize what you found, then 
 
 ### First-time user (no travel plan yet)
 
-If email is connected, search for booking confirmations matching the trip and surface anything not yet captured before generating the baseline plan.
+If email is connected, search for booking confirmations matching the trip and surface anything not yet captured before generating the baseline plan. As soon as the destination is known, write the state file (see `references/sync-protocol.md`) so the trip is discoverable. If the user declines any surfaced booking *before* the plan file exists, remember it and record its `declined` row when the plan is created in Step 2 — otherwise it re-surfaces next session.
 
 Gather intake, then generate the baseline travel plan. Only ask for what can't be inferred from connected tools or the conversation:
 - **Destination and dates** — infer from the user's message if possible
@@ -78,7 +78,7 @@ Build out the plan's day-by-day content from what was gathered in Step 1, confir
 
 **Always generate a named markdown file** for the plan (e.g. `tokyo-itinerary.md`) — even when a connected itinerary app is present. Include a Spending Tracker section; populate it automatically whenever a booking is confirmed, and recalculate the running total and remaining budget. Use lowercase, hyphens for spaces, strip special characters; for multiple destinations use the first or primary. For returning users, update the existing file in place — do not regenerate from scratch.
 
-Every plan file ends with a `## Sync State` section, and every item carries an inline ID (see `references/sync-protocol.md`). The moment the plan file is created or located, write or update `.claude/travel-planner.local.md` per the protocol — it marks the trip active and lets future sessions find the plan.
+Every plan file ends with a `## Sync State` section, and every item carries an inline ID (see `references/sync-protocol.md`). When the plan file is created, seed `## Sync State` with a `declined` row for anything the user declined during intake. Ensure `.claude/travel-planner.local.md` lists this trip in its `trips` list with `active_trip` pointing at it — append, don't overwrite other trips — so future sessions can find the plan.
 
 If an itinerary app is connected, offer to export the plan there in addition to the markdown file (confirm before exporting).
 
@@ -108,7 +108,7 @@ See `references/task-integration.md` for guidance.
 
 ## Step 5 — Reminders
 
-With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. Use whichever reminder capability is available and best fits the user's context and preferences. If none are available, note it in the plan. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 — see `references/sync-protocol.md`); record set reminders in Sync State.
+With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. For trips that have fully passed, scope to deadline-bound Follow-up tasks (e.g. insurance-claim windows, equipment-return dates). Use whichever reminder capability is available and best fits the user's context and preferences. If none are available, note it in the plan. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 — see `references/sync-protocol.md`); record set reminders in Sync State.
 
 If no dates are set yet, skip and offer to revisit once the plan has dates.
 
