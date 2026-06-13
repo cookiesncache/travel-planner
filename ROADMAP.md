@@ -26,15 +26,13 @@ The hook prompts are LLM-evaluated, so their *logic* needs scenario testing, not
 **PreToolUse gate (export gate):**
 - [ ] **G1 — plugin meta-session** where a matched write tool fires → **allow** (activation excludes discussing/developing the plugin)
 - [ ] **G2 — unconfirmed Claude-initiated travel export** → **deny**
-- [ ] **G3 — user-directed export** ("add my flights to my calendar") and the rest of that approved batch → **allow**
-- [ ] **G4 — unrelated write** (groceries to Todoist) mid-travel-session → **allow**
-- [ ] **G5 — ambiguous/compacted, confirmation not visible** → **deny** (fail closed)
-- [ ] **G6 — scoped sync-debt**: a prior unrecorded *trip-data* write + new travel export → **deny**; but a prior unrecorded *grocery* write + new travel export → **allow** *(P0-4: unrelated writes are not debt)*
-- [ ] **G7 — approval via AskUserQuestion**: user selects the proposed items in a multi-select (no typed prose) → next `add-tasks`/export → **allow** *(field incident P0-5)*
-- [ ] **G8 — terse confirmation**: Claude proposes specific writes, user replies "do it" → **allow**, including a single-item retry afterward *(field incident P0-5)*
-- [ ] **G9 — no deadlock**: a write the gate denied, or one approved-but-not-yet-made, must not cause the Stop hook to block the turn *(field incident P0-5)*
-
-> ⚠️ **Harness dependency for G7/G8:** these prose fixes only work if the gate's prompt-evaluator actually *receives* AskUserQuestion tool results and the most recent user turn in its context. The field report flagged (unconfirmed) that it may not. Verify this first with `claude --debug` — if the evaluator can't see those inputs, no prompt wording fixes it, and the fallback is to not gate when an AskUserQuestion selection was the approval mechanism (lean on the Stop hook + Sync State recording instead).
+- [ ] **G3 — unrelated write** (groceries to Todoist) mid-travel-session → **allow**
+- [ ] **G4 — ambiguous/compacted** — no clear trip active → **allow** (fast-path 1)
+- [ ] **G5 — active trip, travel connector write** → **ask** (native harness prompt appears; user approves → write proceeds; user denies → write blocked)
+- [ ] **G6 — active trip, auth/auth-completion write** → **allow** (fast-path 2)
+- [ ] **G7 — approval via AskUserQuestion**: user selects proposed items in a multi-select → native ask prompt appears → user approves → **allow** *(architectural fix for field incident P0-5: gate no longer attempts to detect AskUserQuestion results, which are not visible to a prompt hook)*
+- [ ] **G8 — terse confirmation**: Claude proposes specific writes, user replies "do it" → native ask prompt appears → user approves → **allow** *(architectural fix for field incident P0-5)*
+- [ ] **G9 — no deadlock**: a write the gate blocked (user denied the ask prompt), or one not yet made, must not cause the Stop hook to block the turn *(field incident P0-5 — Stop hook already handles this correctly)*
 
 ---
 
@@ -42,7 +40,7 @@ The hook prompts are LLM-evaluated, so their *logic* needs scenario testing, not
 
 Whole-plugin review after the v0.7.0 refactor (consistency, workflow, and hook-correctness lenses, each finding adversarially verified). 16 issues, deduplicated and ranked. Fix **P0** before promoting v0.7.0 to users; **P1** are logic gaps that break advertised behavior; **P2** are honesty/polish. Each item cites the file to change.
 
-### P0 — Correctness bugs  ✅ all fixed in working tree (for v0.7.1) — P0-1–4 from the review, P0-5 from a field incident
+### P0 — Correctness bugs  ✅ all fixed — P0-1–4 from the review, P0-5 from a field incident (v0.7.2: architectural fix)
 
 **P0-1 · Stop-hook fast-path approves unrecorded exports** *(bug; found independently by all 3 lenses)* — ✅ **fixed:** approve-condition 2 now keys on whether trip-data writes *happened* this session (not plan-edit recency), with an explicit note that a later plan edit does not imply the rows exist — so the row-existence verification always runs.
 `hooks/hooks.json` Stop prompt, approve-condition 2 keys on *recency* ("no connector writes since the plan file was last updated"), not *content*. The most likely failure — Claude updates the plan body but omits the `## Sync State` rows in that same or a later edit — makes the condition literally true, so the deep check that looks for rows never runs. This defeats the exact invariant the hook exists to enforce (`sync-protocol.md`: "an export is not complete until its row exists"). *Fix:* approve only if every connector write this session already has a matching Sync State row (and no approved imports are unwritten); delete the "since the plan file was last updated" clause.
@@ -57,7 +55,7 @@ Whole-plugin review after the v0.7.0 refactor (consistency, workflow, and hook-c
 `hooks/hooks.json` PreToolUse "ADDITIONALLY DENY … earlier connector writes … never recorded" (a) doesn't restrict "earlier writes" to trip data, so an allowed unrelated write (e.g. groceries to Todoist mid-session) becomes phantom debt that false-blocks the next user-directed travel export; (b) lacks the Stop hook's exemptions (user declined recording; plan file missing), so it deadlocks against them. ✅ **fixed:** the clause now scopes debt to writes "OF TRIP DATA," and exempts unrelated writes, user-declined recording, and a known-missing plan file — mirroring the Stop hook's exemptions.
 
 **P0-5 · Gate false-denies a user-confirmed write; deadlocks with the Stop hook** *(bug; field incident, BUG_REPORT_travel-planner-export-gate.md, 2026-06-11)*
-A returning user approved 4 Todoist tasks twice — an AskUserQuestion multi-select, then a plain-text "do it" — and the export gate denied the `add-tasks` write 4 times with the generic gate-2 reason, then the v0.7.0 Stop hook trapped the turn (approved tasks "unwritten"). Two causes: gate rule 3 only recognized prose confirmation, so an AskUserQuestion selection and a terse "do it" weren't registered, and the fail-closed tail then denied; and the Stop hook blocked on approved-but-unwritten changes. ✅ **fixed:** gate rule 3 now explicitly counts (a) direction in the user's words, (b) an AskUserQuestion item selection, and (c) a brief affirmative after a specific proposal — weighting the most recent user turn and not dismissing it for brevity; the fail-closed tail no longer denies for brevity/selection/batch form. The Stop-hook deadlock was already removed by P0-1 (only *writes that happened* are debt) and is now stated explicitly — a denied/failed/not-yet-made write is never debt, so the two hooks can't deadlock. **Caveat:** the gate fix depends on the prompt-evaluator actually receiving AskUserQuestion results + the latest user turn — confirm with `claude --debug` (see G7/G8 caveat in the verification section).
+A returning user approved 4 Todoist tasks twice — an AskUserQuestion multi-select, then a plain-text "do it" — and the export gate denied the `add-tasks` write 4 times with the generic gate-2 reason, then the v0.7.0 Stop hook trapped the turn (approved tasks "unwritten"). Root cause (confirmed): prompt-type PreToolUse hooks receive only event-specific JSON (`tool_name`, `tool_input`, `transcript_path`) — not the conversation inline. AskUserQuestion results and recent user messages live in the transcript file, which a prompt hook cannot open. Two prompt-wording fixes (v0.7.0 and v0.7.1) both failed for this reason. ✅ **fixed (architectural):** the gate no longer attempts to detect confirmation from the conversation. Instead it returns `ask` for any active-trip travel write — the harness surfaces a native approve/deny prompt, which *is* the confirmation mechanism. Fast-path allows (non-travel session, unrelated write) are unchanged. The ADDITIONALLY DENY sync-debt clause was removed from the gate; the Stop hook is the sole enforcer of that invariant and has better context to do so. The Stop-hook deadlock is still prevented by P0-1 (only *writes that happened* are debt; a gate-blocked write never happened).
 
 ### P1 — Logic gaps that break advertised behavior  *(5 of 7 fixed in working tree; P1-3 and P1-5 remain)*
 
