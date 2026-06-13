@@ -41,7 +41,10 @@ Every plan file ends with a `## Sync State` section: one table, one row per (ite
 | tyo-tk1 | Apply for visa | Todoist | 7788991122 | imported 2026-06-10 | synced |
 | tyo-tk2 | Book airport transfer | Todoist | — | confirmed for export | pending |
 | tyo-bk4 | Robot Restaurant tour | — | — | declined by user 2026-06-08 | declined |
+| tyo-tk3 | Buy JR Pass | Todoist | 7788991155 | declined by user 2026-06-09 | declined |
 ```
+
+(`tyo-bk4` was surfaced from email, so it has no remote ID; `tyo-tk3` was surfaced from Todoist, so its app name and remote ID are kept — that ID is what suppresses it next session.)
 
 - **Connector** is the human app name (Google Calendar, Todoist) — never the `mcp__<server>__` segment of a tool name; server names can be opaque and session-specific.
 - **Status** is one of: `synced` (plan and connector agree) · `pending` (confirmed in the plan, not yet exported) · `stale` (remote change detected, not yet reconciled into the plan body) · `declined` (user said no — never re-surface or export) · `needs-attention` (problem item, e.g. payment rejected — see `email-integration.md`).
@@ -56,8 +59,8 @@ Every plan file ends with a `## Sync State` section: one table, one row per (ite
 - **Batches:** one user approval covers the whole batch it describes; one Sync State update after the batch is correct — do not interleave a plan write between every call.
 - **Import:** assign a new ID, add the item to the plan body, add a row with the source connector and remote ID, Last action `imported <date>`, Status `synced`.
 - **Status change** (completion pushed or pulled, remote edit reconciled): update Last action; Status stays `synced`. If a remote change is detected but not yet reconciled into the plan body, set `stale` until it is.
-- **Decline:** when the user says no to a surfaced booking or task, add a row with Connector and Remote ID `—`, Last action `declined by user <date>`, Status `declined`. Before surfacing anything from email or a connector, check Sync State: a declined row suppresses it permanently unless the user asks.
-- **Dedup on import:** an item whose remote ID already appears in Sync State is already captured — reconcile its status; do not re-surface it.
+- **Decline:** when the user says no to a surfaced booking or task, add a row with Last action `declined by user <date>`, Status `declined`. **Record the source Connector and Remote ID if the item came from a connector** (a declined Todoist task or calendar event keeps its app name and remote ID) — that ID is the suppression key. Use Connector/Remote ID `—` only for email- or user-surfaced items that have no remote ID. Before surfacing anything from email or a connector, check Sync State: a declined row suppresses it permanently unless the user asks.
+- **Dedup on import:** an item whose remote ID already appears in Sync State is already handled — if the matching row is `declined`, suppress it (do not re-surface); otherwise reconcile its status. Do not re-surface it.
 
 ## Spending Tracker interaction
 

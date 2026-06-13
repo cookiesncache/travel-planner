@@ -9,7 +9,87 @@ The v0.7.0 hooks (export gate, sync-back check) are prompt-based and rely on a f
 - [ ] In a non-travel session, a matched write resolves via the fast-path allow with no visible friction
 - [ ] Gate flow works end-to-end: unconfirmed export → deny → Claude confirms with user → retry → allow
 - [ ] Stop hook blocks when an export was made but not recorded in Sync State, and approves after recording (no block loop)
-- [ ] Known gaps to re-check against real connectors occasionally: write tools whose names don't start with a matched verb (e.g. `project-move`) bypass the gate — prose still covers them
+- [x] ~~write tools whose names don't start with a matched verb (e.g. `project-move`) bypass the gate~~ — addressed by **P0-2** below (matcher broadened; `project-move`, Notion, camelCase now caught). Re-verify the broadened matcher against real connectors during `claude --debug`.
+
+### Prompt-hook decision tests
+
+The hook prompts are LLM-evaluated, so their *logic* needs scenario testing, not just registration testing. Run each scenario below by feeding the hook's prompt text plus a short synthetic transcript to a model (or spot-check during `claude --debug`) and confirm the decision. **Every case must resolve to exactly one decision — a hook that returns "insufficient evidence" or any non-answer is a failure by itself.** These cases each pin a behavior a real session broke.
+
+**Stop hook (sync-back check):**
+- [ ] **S1 — plugin meta-session** (a dev/review/support chat that discusses plan files like `tokyo-itinerary.md` but makes no connector write) → **approve**. *(Regression: this exact case returned "insufficient evidence" before the activation/decision fix.)*
+- [ ] **S2 — unrelated non-travel session** → **approve**
+- [ ] **S3 — connector write made and recorded** in `## Sync State` → **approve**
+- [ ] **S4 — partial write**: exported, plan *body* updated, but Sync State rows omitted → **block** *(the P0-1 case the temporal proxy used to wave through)*
+- [ ] **S5 — export made, nothing recorded** → **block**, then **approve** after recording (no loop)
+- [ ] **S6 — compacted history**: writes clearly happened, recording unconfirmable → **block once** with re-read instruction, then **approve** on retry (anti-loop holds)
+
+**PreToolUse gate (export gate):**
+- [ ] **G1 — plugin meta-session** where a matched write tool fires → **allow** (activation excludes discussing/developing the plugin)
+- [ ] **G2 — unconfirmed Claude-initiated travel export** → **deny**
+- [ ] **G3 — user-directed export** ("add my flights to my calendar") and the rest of that approved batch → **allow**
+- [ ] **G4 — unrelated write** (groceries to Todoist) mid-travel-session → **allow**
+- [ ] **G5 — ambiguous/compacted, confirmation not visible** → **deny** (fail closed)
+- [ ] **G6 — scoped sync-debt**: a prior unrecorded *trip-data* write + new travel export → **deny**; but a prior unrecorded *grocery* write + new travel export → **allow** *(P0-4: unrelated writes are not debt)*
+
+---
+
+## v0.7.x Hardening — Review Findings (prioritized)
+
+Whole-plugin review after the v0.7.0 refactor (consistency, workflow, and hook-correctness lenses, each finding adversarially verified). 16 issues, deduplicated and ranked. Fix **P0** before promoting v0.7.0 to users; **P1** are logic gaps that break advertised behavior; **P2** are honesty/polish. Each item cites the file to change.
+
+### P0 — Correctness bugs  ✅ all four fixed in working tree (for v0.7.1)
+
+**P0-1 · Stop-hook fast-path approves unrecorded exports** *(bug; found independently by all 3 lenses)* — ✅ **fixed:** approve-condition 2 now keys on whether trip-data writes *happened* this session (not plan-edit recency), with an explicit note that a later plan edit does not imply the rows exist — so the row-existence verification always runs.
+`hooks/hooks.json` Stop prompt, approve-condition 2 keys on *recency* ("no connector writes since the plan file was last updated"), not *content*. The most likely failure — Claude updates the plan body but omits the `## Sync State` rows in that same or a later edit — makes the condition literally true, so the deep check that looks for rows never runs. This defeats the exact invariant the hook exists to enforce (`sync-protocol.md`: "an export is not complete until its row exists"). *Fix:* approve only if every connector write this session already has a matching Sync State row (and no approved imports are unwritten); delete the "since the plan file was last updated" clause.
+
+**P0-2 · Matcher silently bypasses real connector write tools, including the whole Notion connector** *(bug)*
+`hooks/hooks.json` matcher requires a verb token *immediately* after `mcp__<server>__`, ending in `[_-]` or end-of-string. It misses `notion-create-pages`/`notion-update-page` (product-prefixed — the flagship itinerary connector named in `capabilities.md`, so Step 2 Notion export is 100% un-gated), `project-management` (verb mid-name), and camelCase (`createEvent`). README promises confirmation "before Claude writes to any connected app" — deterministically false for these. Wider than the `project-move` note already in the checklist. ✅ **fixed:** matcher now tolerates an optional product-name prefix (`[a-z0-9]+[_-]`) and a camelCase continuation (`[_A-Z-].*`); regression-tested against 20 real write tools (all match, incl. the 7 former bypasses and now `project-move` too) and 17 read/auth tools (all excluded). Tradeoff: a few non-write names like `settings_update` now match, but the prompt's fast-path allow absorbs them — a handled false-positive beats a silent bypass.
+
+**P0-3 · Decline rule erases the remote ID that suppression depends on** *(bug)*
+`sync-protocol.md` Decline rule writes Connector/Remote ID `—` for *all* declines, including connector-sourced ones where both are known. Next-session dedup is remote-ID-keyed, so a declined Todoist task or calendar event reappears, caught only by fuzzy title match. Breaks the "✅ Resolved in v0.7.0" guarantee. ✅ **fixed:** the Decline rule now keeps the source Connector + Remote ID for connector-sourced declines (`—` only for email/user-surfaced items), the Dedup rule suppresses on a remote-ID match against a `declined` row, and the example table shows both forms.
+
+**P0-4 · Gate sync-debt clause is unscoped and exemption-free** *(bug)*
+`hooks/hooks.json` PreToolUse "ADDITIONALLY DENY … earlier connector writes … never recorded" (a) doesn't restrict "earlier writes" to trip data, so an allowed unrelated write (e.g. groceries to Todoist mid-session) becomes phantom debt that false-blocks the next user-directed travel export; (b) lacks the Stop hook's exemptions (user declined recording; plan file missing), so it deadlocks against them. ✅ **fixed:** the clause now scopes debt to writes "OF TRIP DATA," and exempts unrelated writes, user-declined recording, and a known-missing plan file — mirroring the Stop hook's exemptions.
+
+### P1 — Logic gaps that break advertised behavior
+
+**P1-1 · Intake phase is invisible to the ledger and the gate before the plan file exists** *(gap; merges two findings)*
+The first-time flow surfaces email confirmations *before* the plan file is created (`SKILL.md` Step 1), but the decline rule writes to a Sync State ledger that doesn't exist yet, so an intake-time decline evaporates and re-surfaces next session. Same root cause: the gate's fast-path keys on plan/state-file artifacts existing, so the entire intake phase isn't recognized as a travel session. *Fix:* write the state file at the *start* of intake (not Step 2) so the gate has a signal; seed `## Sync State` with declined rows for anything declined during intake when the plan file is created.
+
+**P1-2 · Single-slot state file orphans concurrent trips** *(gap)*
+`sync-protocol.md` state file holds one `active_trip` and "starting a new trip overwrites it." A second concurrent trip destroys the first's pointer, status, and connector choices, and nothing instructs scanning the project for other `*-itinerary.md` files — yet the README sells multi-trip return use. *Fix:* make the state file a trip table with an active pointer; add a Step-1 directory scan for plan files before declaring "nothing found."
+
+**P1-3 · Calendar reminders are required and forbidden at once** *(gap)*
+`reminder-integration.md` says create a calendar reminder alert for "visa application"; `calendar-integration.md` forbids calendar events for prep reminders, naming "apply for visa" verbatim. A calendar-only user at Step 5 gets contradictory instructions and may refuse or hedge. *Fix:* scope the calendar event whitelist/ban to Step 3 export; carve out user-confirmed Step 5 `rm`-type reminder alerts.
+
+**P1-4 · Sync State `pending` status has no lifecycle** *(gap)*
+`sync-protocol.md` defines and exemplifies `pending` but no recording rule ever produces or clears it, so deferred or mid-batch-failed exports have no path — and the Stop hook's "no approved changes left unwritten" can block with no rule to satisfy. *Fix:* add a Pending rule (write on deferral/failure, clear on successful export); note that a cross-session pending row still needs fresh confirmation before export.
+
+**P1-5 · Scheduled-task reminders have no valid Connector value** *(gap)*
+A session-capability reminder isn't an app, but Sync State requires a human app name, and `create_scheduled_task` even trips the export gate. *Fix:* define a canonical Connector string + Remote-ID semantics for scheduled-task reminders in `sync-protocol.md`, or explicitly exempt them from the ledger (note them in the plan body instead).
+
+**P1-6 · Post-trip route skips reminders** *(gap)*
+The returning-user route sends a passed trip to Step 4 only; deadline-bound Follow-up tasks (insurance claims, rental returns) never get reminder offers. *Fix:* extend the post-trip route to Step 5 scoped to deadline-bound Follow-up tasks; relax Step 5's "not pre-departure prep that has passed" scoping accordingly.
+
+**P1-7 · Stop-hook blind spots: compaction and user veto** *(gap; merges two findings)*
+(a) No compaction guard — the gate fails closed on truncated history, but the Stop fast-path *approves* on the same blindness, ending a turn with unrecorded exports invisible. (b) Condition 3 lets the user veto recording, breaking the ledger invariant with no recovery path. ✅ **partly fixed:** compaction guard added to the Stop prompt (block-once + re-read instruction; the anti-loop rule prevents a second block). This work also fixed a related flaw caught while testing the hook live — **both hooks over-triggered their "active travel session" detection on mere discussion/reading/development of the plugin** (a plugin-dev or support session looked like a live trip), and the **Stop prompt could return a non-decision** ("insufficient evidence in transcript") instead of approve/block. Both hooks now lead with "did a real connector write of trip data actually happen this session," explicitly exclude discussing/developing/supporting the plugin, and the Stop prompt is forced to resolve to exactly one decision with a default-approve on residual doubt. **Still open:** defining what a user recording-veto leaves behind (e.g. a plan-body note) so reconciliation isn't silently wrong.
+
+### P2 — Honesty & polish
+
+**P2-1 · GUI/computer-use connectors bypass both hooks** *(gap)*
+Apple Calendar/Reminders/Things on Desktop are driven via computer-use, whose tool names never match `mcp__`. The README overclaims "before Claude writes to any connected app." *Fix (cheap):* scope the README and `hooks.json` description honestly to MCP connectors, and have `sync-protocol.md`'s "never work around a hook" rule name GUI/browser/Bash paths as prose-gate-2 territory.
+
+**P2-2 · "No-op instantly" overstates hook cost** *(improvement)*
+Both hooks are prompt (LLM) evaluations; the Stop check runs at the end of *every* turn in *every* enabled session. *Fix:* reword `hooks.json` description and README to "resolve via a fast-path allow," and note that infrequent travelers can disable the plugin between trips.
+
+**P2-3 · `task-integration.md` missing the state-file recording line** *(improvement)*
+Two of three sibling integration files tell Claude to record the chosen app in the state file; `task-integration.md`'s multiple-apps sentence doesn't. *Fix:* append "and record the choice in the state file (see `sync-protocol.md`)," mirroring the calendar/itinerary files; optionally also `capabilities.md`.
+
+**P2-4 · Dangling plan-file pointer has no handler** *(gap)*
+The regenerate fallback only fires when *both* the plan file and state file are missing; state-file-present-but-`plan_file`-path-dangling has no instruction. *Fix:* one sentence in `itinerary-integration.md` — if the state file's `plan_file` doesn't resolve, surface it and ask to regenerate or relocate.
+
+**P2-5 · Export gate false-denies delegated subagent batches** *(gap; low reachability)*
+PreToolUse fires inside subagents, where the parent's approval isn't visible, so a delegated approved export fail-closes. The plugin ships no agents today, so this is latent — but it lands the moment the Booking Intel agent does. *Fix:* add a subagent branch to the gate prompt, or forbid delegating connector writes until the SubagentStop mirror ships (already a Booking Intel dependency).
 
 ---
 
@@ -105,15 +185,15 @@ Attach a `.zip` of the plugin directory to each GitHub release so users can inst
 
 ---
 
-## ~~Email Declined-Item Suppression~~ ✅ Resolved in v0.7.0
+## Email Declined-Item Suppression *(partially resolved in v0.7.0 — two holes remain)*
 
-Resolved by the Sync State ledger (`references/sync-protocol.md`): declining a surfaced booking writes a `declined` row, and email/connector reconciliation checks Sync State before surfacing anything. Declined items are suppressed permanently unless the user asks.
+The v0.7.0 Sync State ledger resolves this for the common case: declining a surfaced booking writes a `declined` row, and reconciliation checks Sync State before surfacing. **But the v0.7.x review found two holes that break "suppressed permanently":** connector-sourced declines erase the remote ID suppression depends on (**P0-3**), and declines during first-time intake have no ledger to write to yet (**P1-1**). Suppression is only durable once both are fixed.
 
 ---
 
 ## Integration file review *(low priority)*
 
-The integration reference files (`calendar-integration.md`, `task-integration.md`, `itinerary-integration.md`, etc.) have not been reviewed end-to-end by the author. A manual pass is recommended to verify that the guidance matches real-world connector behavior and that trip-type scoping (e.g. the city-break Admin items question — what to apply when a city break is also international) is correctly specified.
+The v0.7.x review above covered cross-file consistency and connector behavior (P1-3, P2-3, P2-4 in particular). This item is now narrowed to the trip-type *scoping* question the review did not target: the city-break Admin items (what to apply when a city break is also international).
 
 ### Changes likely required
 - `references/task-checklist.md` city-break row: clarify which Admin items apply when a city break is also international, rather than leaving "unless international" unexplained
