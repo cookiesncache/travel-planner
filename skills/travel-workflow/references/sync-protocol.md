@@ -17,15 +17,17 @@ Gate 2 and sync-back recording are enforced by plugin hooks (below). Gate 1 is d
 
 The plugin ships two hooks:
 
-- **Export gate** (PreToolUse) — blocks Claude-initiated connector writes that lack user confirmation, and blocks new connector writes while earlier ones are unrecorded in Sync State.
-- **Sync-back check** (Stop) — blocks ending the turn while connector writes or approved imports are not reflected in the plan file.
+- **Export gate** (PreToolUse) — for a connector write during an active trip it returns `ask`, so the harness surfaces a native approve/deny prompt; that prompt *is* the gate-2 confirmation. It does not try to read the conversation for prior approval — a prompt hook can't see it reliably (see P0-5 in the ROADMAP).
+- **Sync-back check** (Stop) — blocks ending the turn while connector writes or approved imports are not yet recorded in the plan file's ## Sync State. It is also the sole enforcer of sync-debt (recording earlier writes before finishing).
 
-When a hook blocks you, do what its reason says — then retry:
+How to cooperate:
 
-- Gate-2 deny → present the exact change and app to the user, get their yes, retry the call.
-- Sync-back deny/block → record the writes in Sync State (and update the plan body / Spending Tracker), then retry or finish.
+- Gate `ask` → tell the user exactly what you'll create or change and in which app; they approve or decline at the prompt. Once it succeeds, record the result in Sync State.
+- Sync-back block → record the writes in Sync State (and update the plan body / Spending Tracker), then finish.
 
-Never retry the same call unchanged, and never work around a hook by switching to a different tool. The hooks only see MCP tool calls, so writes Claude makes another way — controlling an app's screen, a browser, or a shell — are not mechanically gated; the gate-2 confirm-first rule still applies to them in full, by prose.
+Never work around a hook by switching tools. The hooks only see MCP tool calls, so writes made another way — controlling an app's screen, a browser, or a shell — are not mechanically gated; the gate-2 confirm-first rule still applies to them in full, by prose.
+
+**Connector writes happen in the main thread only.** Subagents are read-only with respect to connectors: they read the plan, search, and report, but never call a connector write tool — the main thread performs every export and records it. This is deliberate — both hooks operate on the main agent's turn, so a connector write made inside a subagent would bypass the gate and the sync-back check. A future agent that surfaces bookings or tasks (e.g. Booking Intel) returns them as data; the main thread does the writing and the recording.
 
 ## Sync State section
 
