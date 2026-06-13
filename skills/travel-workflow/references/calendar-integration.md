@@ -4,14 +4,16 @@ The calendar is a bidirectional sync target for the travel plan (the source of t
 
 ## What to Export
 
-Create calendar events **only** for the following:
+This governs **Step 3 itinerary export** — what trip *content* becomes calendar events. Create calendar events only for the following:
 
 - **Trip block** — a single event spanning the full trip (departure to return); specific times if known, otherwise all-day. Title: destination(s) — e.g. "Tokyo & Kyoto" or "California Road Trip".
 - **Flights** — one event per leg, spanning that leg's departure to arrival; origin airport as location, destination airport plus airline and flight number in the description. A multi-leg or connecting itinerary gets a separate event for each leg.
 - **Accommodation stays** — a single event per stay spanning check-in to check-out, using the check-in and check-out times where known (otherwise the respective dates).
 - **Timed-entry attractions** — timed events for anything with a confirmed entry or start time (museums, parks, tours, reservations); include the entry time.
 
-**Do not create calendar events** for pre-trip action tasks, prep reminders, or planning tasks (e.g. "book flights", "apply for visa", "pack", "confirm reservations 48h out"). These are handled through task and reminder capability logic only — see `task-integration.md` and `reminder-integration.md`. A timed-entry attraction may still have an associated prep task (e.g. "bring confirmation"); that task goes to the task app, not the calendar.
+**Do not create calendar events for pre-trip action tasks, prep reminders, or planning tasks** (e.g. "book flights", "apply for visa", "pack", "confirm reservations 48h out") *as itinerary content*. These are handled through task and reminder capability logic — see `task-integration.md` and `reminder-integration.md`.
+
+**Step 5 exception:** if the calendar is the chosen reminder capability, a user-confirmed reminder alert for a time-sensitive task (an `rm`-type item, e.g. "apply for visa") *may* be created as a calendar event. That is a reminder, not itinerary content — it is governed by `reminder-integration.md`, and the ban above applies only to Step 3 itinerary export. A timed-entry attraction may still have an associated prep task (e.g. "bring confirmation"); that task goes to the task app, not the calendar.
 
 ## Guidelines
 

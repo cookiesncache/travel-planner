@@ -26,4 +26,4 @@ Any tool that can search and read emails (e.g. Gmail, Outlook). Use when connect
 
 ## Reminders
 
-Set reminders for time-sensitive prep tasks. Options: calendar alert, due-dated task in the task app, or scheduled-task session capability. See `reminder-integration.md` for full guidance.
+Set reminders for time-sensitive prep tasks. Options: calendar alert, due-dated task in the task app, or scheduled-task session capability. If more than one of these is available, ask the user which to use for reminders rather than choosing for them. See `reminder-integration.md` for full guidance.

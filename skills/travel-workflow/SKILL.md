@@ -108,7 +108,7 @@ See `references/task-integration.md` for guidance.
 
 ## Step 5 — Reminders
 
-With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. For trips that have fully passed, scope to deadline-bound Follow-up tasks (e.g. insurance-claim windows, equipment-return dates). Use whichever reminder capability is available and best fits the user's context and preferences. If none are available, note it in the plan. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 — see `references/sync-protocol.md`); record set reminders in Sync State.
+With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. For trips that have fully passed, scope to deadline-bound Follow-up tasks (e.g. insurance-claim windows, equipment-return dates). If more than one reminder capability is connected, ask the user which to use — don't choose for them; if only one is available, use it; if none, note it in the plan. See `references/reminder-integration.md`. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 — see `references/sync-protocol.md`); record set reminders in Sync State.
 
 If no dates are set yet, skip and offer to revisit once the plan has dates.
 
