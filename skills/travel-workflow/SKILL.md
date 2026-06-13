@@ -46,11 +46,11 @@ Reconcile the travel plan:
 2. **Reconcile against connectors and email.** Cross-reference findings from all connected tools and email against the plan. Surface a booking or event only if it isn't already in the plan — the plan is the deduplication anchor: match against Sync State remote IDs, and never re-surface anything with a `declined` row. Add surfaced items once confirmed. See `references/email-integration.md` for email-specific guidance.
 3. **Confirm the baseline.** Present the plan to the user and get explicit confirmation before proceeding — do not begin writing until the user approves.
 4. **Route by trip dates:**
-   - Trip is in the future → run the full workflow (Steps 2–5)
-   - Trip is in progress → Steps 2, 3, 4 (scoped to The Trip tasks), then Step 5
-   - Trip has fully passed → Steps 4 and 5, scoped to the Follow-up checklist (deadline-bound follow-ups — insurance-claim windows, equipment returns — still get reminders); when Follow-up wraps up, set that trip's `status: done` in the state file
+   - Trip is in the future → run the full workflow (Steps 2–6)
+   - Trip is in progress → Steps 2, then 4–6 (scoped to The Trip tasks); skip the feasibility check (Step 3) — the trip is already underway
+   - Trip has fully passed → Steps 5 and 6, scoped to the Follow-up checklist (deadline-bound follow-ups — insurance-claim windows, equipment returns — still get reminders); when Follow-up wraps up, set that trip's `status: done` in the state file
 
-Only ask about what genuinely can't be inferred. Summarize what you found, then proceed with Steps 2–5 only where an update is needed:
+Only ask about what genuinely can't be inferred. Summarize what you found, then proceed with Steps 2–6 only where an update is needed:
 
 > "Looks like you're flying to Tokyo in September — solo trip, flights and hotel already in your plan. Found a new tour confirmation in your email that's not captured yet. Want me to add it and check what else is still ahead?"
 
@@ -84,11 +84,19 @@ If an itinerary app is connected, offer to export the plan there in addition to 
 
 See `references/itinerary-integration.md` for guidance, including the fallback if the prior markdown file cannot be located.
 
-**Feasibility checkpoint (before booking).** Once the day-by-day plan exists — and before Steps 3–4 generate scheduling and "book X" tasks — check that the schedule is physically realistic, while rebalancing is still cheap. Run automatically for road-trip and multi-destination trips (offer it otherwise). Use the `feasibility-check` agent: give it the plan file and trip context; it returns drive-time and pacing findings with confidence and sources. Present them to the user and let them rebalance (move a night, change a base town, reorder stops) or accept the trade-offs before proceeding. See `references/feasibility-integration.md`.
+---
+
+## Step 3 — Feasibility
+
+**Run this before any scheduling, task sync, or reminders — and before the user books anything.** It gates Steps 4–6: do not export to a calendar, sync tasks, or set reminders until the itinerary's pacing has been checked and the user has rebalanced or accepted the trade-offs. Verifying now, while rebalancing nights and base towns is still cheap, is the whole point — once bookings are confirmed the fixes are gone.
+
+Run automatically for road-trip and multi-destination trips (and any trip with inter-stop driving); offer it (lighter) for flight/city-break trips. Skip only when the trip is already in progress or has passed — pacing is moot then. Use the `feasibility-check` agent: give it the plan file and trip context; it returns drive-time and pacing findings with confidence and sources. Present them grouped by day and let the user rebalance (move a night, change a base town, reorder stops) or accept the trade-offs before proceeding.
+
+See `references/feasibility-integration.md` for full guidance.
 
 ---
 
-## Step 3 — Schedule
+## Step 4 — Schedule
 
 Export the plan's dated items to a connected calendar, and import existing trip events back into the plan. Gates and Sync State recording per `references/sync-protocol.md`. If dates aren't known yet, skip and offer to revisit once the plan has dates set.
 
@@ -96,7 +104,7 @@ See `references/calendar-integration.md` for full guidance.
 
 ---
 
-## Step 4 — Tasks
+## Step 5 — Tasks
 
 If a task app is connected, import tasks from it — for returning users this includes syncing status changes for tasks already in the plan. For first-time users, task context was already loaded in Step 1. Then identify what's still ahead and not yet captured. Cross-reference the plan's tasks against:
 - What the user said is already done — exclude anything they've confirmed complete
@@ -108,7 +116,7 @@ See `references/task-integration.md` for guidance.
 
 ---
 
-## Step 5 — Reminders
+## Step 6 — Reminders
 
 With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. For trips that have fully passed, scope to deadline-bound Follow-up tasks (e.g. insurance-claim windows, equipment-return dates). If more than one reminder capability is connected, ask the user which to use — don't choose for them; if only one is available, use it; if none, note it in the plan. See `references/reminder-integration.md`. Confirm each reminder with the user before setting it — when using a task app, make explicit what will be created and in which app (gate 2 — see `references/sync-protocol.md`); record reminders set in a connected app in Sync State, and note in-session scheduled-task reminders in the plan body instead (see `references/reminder-integration.md`).
 

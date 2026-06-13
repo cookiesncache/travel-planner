@@ -4,11 +4,12 @@ A pre-booking pacing review of the draft itinerary, run by the `feasibility-chec
 
 ## When the check runs
 
-At the **end of Step 2 (Itinerary)**, once the day-by-day plan exists and **before** Step 3/Step 4 generate scheduling and "book X" tasks — never only after bookings are confirmed. Once flights, lodging, and the rental car are locked, the cheap fixes (rebalance nights, change base towns) are gone and the trip is stuck in whatever shape it was booked in.
+As **Step 3**, immediately after the day-by-day plan exists (Step 2) and **before** Steps 4–6 (scheduling, task sync, reminders) and before the user books — never only after bookings are confirmed. Once flights, lodging, and the rental car are locked, the cheap fixes (rebalance nights, change base towns) are gone and the trip is stuck in whatever shape it was booked in.
 
 - **Road trip / multi-destination** (any trip with inter-stop driving) — run automatically.
 - **Flight / city break** — offer it; run a lighter version (intra-day load and transfer times).
-- **Returning user, already booked** — still run, but frame findings as *manage-only* (reset expectations, minor trims) and note that pre-booking was the time to fix.
+- **Returning user, already booked** (trip still upcoming) — still run, but frame findings as *manage-only* (reset expectations, minor trims) and note that pre-booking was the time to fix.
+- **Trip in progress or already passed** — skip; pacing is moot once travel is underway.
 
 ## What a "leg" is
 
@@ -38,4 +39,4 @@ For every flag, give at least one concrete, still-cheap option: move a night bet
 
 ## After the check
 
-Present the agent's report to the user, grouped by day, with confidence and sources. Let the user adjust the plan (gate 1 applies to any Claude-initiated plan edits — see `sync-protocol.md`) or accept the trade-offs, then proceed to Step 3/Step 4. The check informs decisions; it never books, cancels, or writes to a connector.
+Present the agent's report to the user, grouped by day, with confidence and sources. Let the user adjust the plan (gate 1 applies to any Claude-initiated plan edits — see `sync-protocol.md`) or accept the trade-offs, then proceed to Steps 4–6. The check informs decisions; it never books, cancels, or writes to a connector.

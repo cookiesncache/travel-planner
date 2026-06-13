@@ -44,4 +44,7 @@ If an itinerary app or notes tool is connected (Wanderlog, Notion, Google Docs, 
 
 Gate 1 applies to Claude-initiated updates (see `sync-protocol.md`). For returning users, update only what's changed — do not regenerate the full plan unless asked.
 
-If the prior markdown file cannot be located in the current session, check `.claude/travel-planner.local.md` first — it records the plan file path (see `sync-protocol.md`). If it's missing too, ask the user whether to regenerate the plan from context and connected tools, or start the first-time flow from scratch.
+If the prior markdown file cannot be located in the current session, check `.claude/travel-planner.local.md` first — each trip entry records its `plan_file` path (see `sync-protocol.md`). Then:
+
+- **State file missing too** — scan the project for a `*-itinerary.md` plan file (per Step 1); if none is found anywhere, ask the user whether to regenerate the plan from context and connected tools, or start the first-time flow from scratch.
+- **State file present but its `plan_file` doesn't resolve** (the file was renamed, moved, or deleted) — say so explicitly; do not silently proceed on a dangling pointer or start a duplicate plan. Scan the project for a renamed/moved `*-itinerary.md` that matches the trip and, if one matches, repoint the state file at it. If none matches, ask whether to regenerate from context and connectors — noting that any decline/sync history in the lost file can't be recovered — or to supply the correct file.
