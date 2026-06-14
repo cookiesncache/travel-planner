@@ -135,18 +135,18 @@ Given the current travel plan and trip context (destination, dates), the agent s
 
 ---
 
-## Itinerary Feasibility Check (pre-booking pacing review) *(High priority)* — ✅ implemented (pending live validation)
+## Itinerary Feasibility Check (pre-booking pacing review) *(High priority)* — ✅ implemented & validated
 
 From a field user story (`USER_STORY_travel-planner-feasibility-check.md`): a 9-day California road trip was fully booked before anyone checked whether the day-to-day schedule was physically realistic. A later drive-time review found a "sightseeing" day that was really a ~7–8.5 h transit day (Joshua Tree → Yosemite), a compressed coast leg (Mendocino → Big Sur), a departure-day backtrack past the airport, and a geographically inconsistent lodging label. Because everything was booked, these could only be *managed*, not *fixed*. The check must run **before** booking, while rebalancing nights and base towns is still cheap.
 
 ### What it does
-On a draft itinerary, estimate per-leg drive time/distance and per-stop time, then flag: over-packed driving days; "sightseeing" days that are really transit; rushed or under-used stops; geographically inconsistent lodging / departure-day backtracks. Every finding carries a confidence level + sources and at least one concrete rebalancing option (move a night, change a base town, reorder stops), framed as still-cheap-to-change.
+On a draft itinerary, estimate per-leg **travel time by mode** (drive/flight/train/ferry — door-to-door, so a short flight still counts its airport + transfer overhead) and per-stop time, then flag: over-packed travel days; "sightseeing" days that are really transit; rushed or under-used stops; geographically inconsistent lodging / departure-day backtracks. Every finding carries a confidence level + sources and at least one concrete rebalancing option (move a night, change a base town, reorder stops, swap a leg's mode), framed as still-cheap-to-change. *(Generalized 2026-06-14 from drive-only to all travel modes.)*
 
 ### Where it runs
-Its own **Step 3**, after the itinerary is drafted (Step 2) and before Steps 4–6 (scheduling, task sync, reminders) generate booking-type commitments — never only after bookings are confirmed. (Originally shipped as a sub-paragraph of Step 2, which caused real runs to order it *last*, after task sync and calendar export; promoted to a first-class gating step to fix the ordering.) Auto-run for **road trip** and **multi-destination** trips (and any trip with inter-stop driving); offer it (lighter: intra-day/transfer feasibility) for flight/city-break trips. For a returning user whose trip is already booked, still run it but frame findings as *manage-only* — and note that pre-booking is the right time.
+Its own **Step 3**, after the itinerary is drafted (Step 2) and before Steps 4–6 (scheduling, task sync, reminders) generate booking-type commitments — never only after bookings are confirmed. (Originally shipped as a sub-paragraph of Step 2, which caused real runs to order it *last*, after task sync and calendar export; promoted to a first-class gating step to fix the ordering.) Auto-run for any trip with inter-stop travel — road trips, and multi-destination trips by car, flight, train, or ferry; offer it (lighter: intra-day/transfer feasibility) for single-base city breaks. For a returning user whose trip is already booked, still run it but frame findings as *manage-only* — and note that pre-booking is the right time.
 
 ### Data source (pivotal constraint — verified this session)
-There is **no maps/routing/directions connector** available, and the only distance-ish tool (Uber `get_estimates_between_two_locations_claude`) is unusable here — immediate-ride-only, refuses future dates, returns a booking widget. So estimates come from **WebSearch/WebFetch** (typical drive times, with citations) — preferred, and it satisfies the "sources + confidence" criterion — falling back to model geographic knowledge flagged **low confidence** when search is unavailable or inconclusive. If a routing connector is added later, the agent should prefer it.
+There is **no maps/routing/directions connector** available, and the only distance-ish tool (Uber `get_estimates_between_two_locations_claude`) is unusable here — immediate-ride-only, refuses future dates, returns a booking widget. So estimates come from **WebSearch/WebFetch** (typical travel times by mode — drive/train/flight/ferry, with citations) — preferred, and it satisfies the "sources + confidence" criterion — falling back to model geographic/transport knowledge flagged **low confidence** when search is unavailable or inconclusive. If a routing connector is added later, the agent should prefer it.
 
 ### Why an agent
 Like the Booking Intel Agent, this is noisy multi-step work (per-leg searches, threshold checks, geo reasoning). A dedicated **Feasibility Check Agent** absorbs the noise and returns a clean structured digest. It is **read-only** (reads the plan; makes no connector or plan writes), so it needs no Stop/SubagentStop sync-back hook. Reusable as a standalone `/check` command.
@@ -154,15 +154,15 @@ Like the Booking Intel Agent, this is noisy multi-step work (per-leg searches, t
 Output schema (sketch):
 ```
 { days: [ { date, label,
-    legs: [ { from, to, driveTime, distanceMi, confidence, sources[] } ],
-    totalDriveTime,
-    flags: [ { type: over-packed-driving | mislabeled-transit | rushed-stop | underused-stop | geo-inconsistent-lodging | departure-day-backtrack, detail, confidence, sources[] } ],
+    legs: [ { from, to, mode, travelTime, distanceMi (if driving), confidence, sources[] } ],
+    totalTravelTime,
+    flags: [ { type: over-packed-travel | mislabeled-transit | rushed-stop | underused-stop | geo-inconsistent-lodging | departure-day-backtrack, detail, confidence, sources[] } ],
     rebalanceOptions: [ string ] } ],
   overallVerdict, confidence }
 ```
 
 ### Thresholds (defaults, tunable in the reference file)
-Heavy driving day > ~5 h; effectively-transit > ~7 h. A "sightseeing"/activity label whose drive time dominates usable daytime → mislabel. Stop time below a typical minimum for the stop type → rushed; a marquee destination with far more time than planned use → under-used. Lodging far from the day's activity cluster, or routing that backtracks past the destination/airport → geo-inconsistent / backtrack.
+Heavy travel day > ~5 h door-to-door; effectively-transit > ~7 h (a single flight often lands here once airport overhead + transfers count). A "sightseeing"/activity label whose travel time dominates usable daytime → mislabel. Stop time below a typical minimum for the stop type → rushed; a marquee destination with far more time than planned use → under-used. Lodging far from the day's activity cluster, or routing that backtracks past the destination/airport → geo-inconsistent / backtrack.
 
 ### Changes required
 - ✅ Added `agents/feasibility-check.md` — read-only agent (Read/Grep/Glob/WebSearch/WebFetch), inputs, output schema, WebSearch-with-citations + low-confidence fallback. *(Flat `agents/<name>.md` — that is the auto-discovered convention; a nested `agents/<name>/AGENT.md` would NOT load.)*
@@ -171,8 +171,8 @@ Heavy driving day > ~5 h; effectively-transit > ~7 h. A "sightseeing"/activity l
 - ✅ `references/task-checklist.md` — folded the check into "Finalize daily itinerary," ahead of Preparation booking tasks.
 - ✅ README — pre-booking feasibility note.
 
-### Definition of done *(pending — needs a live session with WebSearch)*
-Validate against the California example: the agent must independently surface the Sep 21 Joshua Tree → Yosemite transit-day, the Sep 27 Mendocino → Big Sur compression, the Sep 28 departure-day backtrack, and the inconsistent lodging label — each with confidence, sources, and ≥1 rebalancing option — and present them **before** the booking step.
+### Definition of done — ✅ met (validated 2026-06-13)
+Validated live (WebSearch) against a pre-booking draft of the California trip (`Projects/Travel/california-road-trip-prebooking-draft.md`): the agent independently surfaced all four documented problems — Sep 21 Joshua Tree → Yosemite transit-day (mislabeled sightseeing), Sep 27 Mendocino → Big Sur compression, Sep 28 departure-day backtrack (flagged must-fix), and the inconsistent Ukiah lodging — each with a confidence level, cited sources, and concrete rebalancing options, while correctly passing the genuinely-fine days. Minor cosmetic nit observed: the verdict miscounted "8 days" for a 9-day trip (findings all correct).
 
 ---
 

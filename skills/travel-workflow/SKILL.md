@@ -90,7 +90,7 @@ See `references/itinerary-integration.md` for guidance, including the fallback i
 
 **Run this before any scheduling, task sync, or reminders — and before the user books anything.** It gates Steps 4–6: do not export to a calendar, sync tasks, or set reminders until the itinerary's pacing has been checked and the user has rebalanced or accepted the trade-offs. Verifying now, while rebalancing nights and base towns is still cheap, is the whole point — once bookings are confirmed the fixes are gone.
 
-Run automatically for road-trip and multi-destination trips (and any trip with inter-stop driving); offer it (lighter) for flight/city-break trips. Skip only when the trip is already in progress or has passed — pacing is moot then. Use the `feasibility-check` agent: give it the plan file and trip context; it returns drive-time and pacing findings with confidence and sources. Present them grouped by day and let the user rebalance (move a night, change a base town, reorder stops) or accept the trade-offs before proceeding.
+Run automatically for any trip with inter-stop travel — road trips, and multi-destination trips by car, flight, train, or ferry; offer it (lighter) for single-base city breaks. Skip only when the trip is already in progress or has passed — pacing is moot then. Use the `feasibility-check` agent: give it the plan file and trip context; it returns travel-time and pacing findings (door-to-door, by mode) with confidence and sources. Present them grouped by day and let the user rebalance (move a night, change a base town, reorder stops, swap a leg's mode) or accept the trade-offs before proceeding.
 
 See `references/feasibility-integration.md` for full guidance.
 
