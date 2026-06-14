@@ -175,7 +175,9 @@ Heavy travel day > ~5 h door-to-door; effectively-transit > ~7 h (a single fligh
 ### Definition of done — ✅ met (validated 2026-06-13)
 Validated live (WebSearch) against a pre-booking draft of the California trip (`Projects/Travel/california-road-trip-prebooking-draft.md`): the agent independently surfaced all four documented problems — Sep 21 Joshua Tree → Yosemite transit-day (mislabeled sightseeing), Sep 27 Mendocino → Big Sur compression, Sep 28 departure-day backtrack (flagged must-fix), and the inconsistent Ukiah lodging — each with a confidence level, cited sources, and concrete rebalancing options, while correctly passing the genuinely-fine days. Minor cosmetic nit observed: the verdict miscounted "8 days" for a 9-day trip (findings all correct).
 
-**Pending validation:** the multi-modal path (flight/train/ferry, v0.8.2) and the meals/hard-deadline path (v0.8.3) — including the California **Sep 20** check-in-cutoff case (Safari Motor Inn 9:30 PM + Keys View sunset + Pappy & Harriet's dinner) and the **Sep 26** 7 PM-reservation case — are implemented but not yet live-validated.
+**✅ Validated (2026-06-14, live WebSearch):**
+- **Multi-modal (v0.8.2)** on a Europe flight+train+ferry draft (`Projects/Travel/europe-multimodal-draft.md`): the agent inferred each leg's mode, counted door-to-door — the Avignon→Athens day at ~8–9 h (get-to-airport + international overhead + air + the +1 h timezone shift + airport→city) and the Piraeus→Santorini ferry at ~7 h+ schedule-bound — and flagged the right transit/over-packed/deadline days while passing the fine ones.
+- **Meals + hard deadlines (v0.8.3)** on a California draft (`Projects/Travel/california-meal-deadline-draft.md`): **Sep 20** correctly flagged `deadline-risk` on three stacked walls (Keys View sunset, Pappy & Harriet's last-seating + wait, the 9:30 PM front-desk cutoff) once meal time was counted; **Sep 26** correctly confirmed the vineyard-tasting → drive → 7 PM-reservation timeline as feasible. No false flags on fine days.
 
 ---
 
