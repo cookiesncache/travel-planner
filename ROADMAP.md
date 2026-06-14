@@ -140,7 +140,7 @@ Given the current travel plan and trip context (destination, dates), the agent s
 From a field user story (`USER_STORY_travel-planner-feasibility-check.md`): a 9-day California road trip was fully booked before anyone checked whether the day-to-day schedule was physically realistic. A later drive-time review found a "sightseeing" day that was really a ~7–8.5 h transit day (Joshua Tree → Yosemite), a compressed coast leg (Mendocino → Big Sur), a departure-day backtrack past the airport, and a geographically inconsistent lodging label. Because everything was booked, these could only be *managed*, not *fixed*. The check must run **before** booking, while rebalancing nights and base towns is still cheap.
 
 ### What it does
-On a draft itinerary, estimate per-leg **travel time by mode** (drive/flight/train/ferry — door-to-door, so a short flight still counts its airport + transfer overhead) and per-stop time, then flag: over-packed travel days; "sightseeing" days that are really transit; rushed or under-used stops; geographically inconsistent lodging / departure-day backtracks. Every finding carries a confidence level + sources and at least one concrete rebalancing option (move a night, change a base town, reorder stops, swap a leg's mode), framed as still-cheap-to-change. *(Generalized 2026-06-14 from drive-only to all travel modes.)*
+On a draft itinerary, estimate per-leg **travel time by mode** (drive/flight/train/ferry — door-to-door, so a short flight still counts its airport + transfer overhead), per-stop time, and **meals as first-class time costs** (detour to/from each eatery measured against the through-route + a dining-duration block by venue type), then flag: over-packed travel days; **meal-inclusive over-packed days** that a travel-only model missed; "sightseeing" days that are really transit; rushed or under-used stops; geographically inconsistent lodging / departure-day backtracks; and **hard-deadline misses** (lodging check-in cutoffs, timed reservations) tested against the meal-inclusive timeline. Every finding carries a confidence level + sources and at least one concrete rebalancing option, framed as still-cheap-to-change. *(2026-06-14: generalized drive→all modes; meals + hard-deadline checks added.)*
 
 ### Where it runs
 Its own **Step 3**, after the itinerary is drafted (Step 2) and before Steps 4–6 (scheduling, task sync, reminders) generate booking-type commitments — never only after bookings are confirmed. (Originally shipped as a sub-paragraph of Step 2, which caused real runs to order it *last*, after task sync and calendar export; promoted to a first-class gating step to fix the ordering.) Auto-run for any trip with inter-stop travel — road trips, and multi-destination trips by car, flight, train, or ferry; offer it (lighter: intra-day/transfer feasibility) for single-base city breaks. For a returning user whose trip is already booked, still run it but frame findings as *manage-only* — and note that pre-booking is the right time.
@@ -155,14 +155,15 @@ Output schema (sketch):
 ```
 { days: [ { date, label,
     legs: [ { from, to, mode, travelTime, distanceMi (if driving), confidence, sources[] } ],
-    totalTravelTime,
-    flags: [ { type: over-packed-travel | mislabeled-transit | rushed-stop | underused-stop | geo-inconsistent-lodging | departure-day-backtrack, detail, confidence, sources[] } ],
+    meals: [ { venue, venueType, detourMin, diningMin, confidence, sources[] } ],
+    dayTotal, deadlineCheck (when the day has a hard cutoff/reservation),
+    flags: [ { type: over-packed-travel | over-packed-day | mislabeled-transit | rushed-stop | underused-stop | geo-inconsistent-lodging | departure-day-backtrack | deadline-risk, detail, confidence, sources[] } ],
     rebalanceOptions: [ string ] } ],
   overallVerdict, confidence }
 ```
 
 ### Thresholds (defaults, tunable in the reference file)
-Heavy travel day > ~5 h door-to-door; effectively-transit > ~7 h (a single flight often lands here once airport overhead + transfers count). A "sightseeing"/activity label whose travel time dominates usable daytime → mislabel. Stop time below a typical minimum for the stop type → rushed; a marquee destination with far more time than planned use → under-used. Lodging far from the day's activity cluster, or routing that backtracks past the destination/airport → geo-inconsistent / backtrack.
+Heavy travel day > ~5 h door-to-door; effectively-transit > ~7 h (a single flight often lands here once airport overhead + transfers count). A "sightseeing"/activity label whose travel time dominates usable daytime → mislabel. A day whose *full* budget (travel + activities + meals) exceeds usable daytime → over-packed-day (the meal-aware check). Hard deadlines (lodging check-in cutoff, timed reservation) tested against the meal-inclusive timeline → deadline-risk. Dining defaults: popular sit-down ~75–90 min, standard ~60, casual ~30–45, tasting ~120; meal detour measured vs the through-route. Stop time below a typical minimum for the stop type → rushed; a marquee destination with far more time than planned use → under-used. Lodging far from the day's activity cluster, or routing that backtracks past the destination/airport → geo-inconsistent / backtrack.
 
 ### Changes required
 - ✅ Added `agents/feasibility-check.md` — read-only agent (Read/Grep/Glob/WebSearch/WebFetch), inputs, output schema, WebSearch-with-citations + low-confidence fallback. *(Flat `agents/<name>.md` — that is the auto-discovered convention; a nested `agents/<name>/AGENT.md` would NOT load.)*
@@ -173,6 +174,8 @@ Heavy travel day > ~5 h door-to-door; effectively-transit > ~7 h (a single fligh
 
 ### Definition of done — ✅ met (validated 2026-06-13)
 Validated live (WebSearch) against a pre-booking draft of the California trip (`Projects/Travel/california-road-trip-prebooking-draft.md`): the agent independently surfaced all four documented problems — Sep 21 Joshua Tree → Yosemite transit-day (mislabeled sightseeing), Sep 27 Mendocino → Big Sur compression, Sep 28 departure-day backtrack (flagged must-fix), and the inconsistent Ukiah lodging — each with a confidence level, cited sources, and concrete rebalancing options, while correctly passing the genuinely-fine days. Minor cosmetic nit observed: the verdict miscounted "8 days" for a 9-day trip (findings all correct).
+
+**Pending validation:** the multi-modal path (flight/train/ferry, v0.8.2) and the meals/hard-deadline path (v0.8.3) — including the California **Sep 20** check-in-cutoff case (Safari Motor Inn 9:30 PM + Keys View sunset + Pappy & Harriet's dinner) and the **Sep 26** 7 PM-reservation case — are implemented but not yet live-validated.
 
 ---
 

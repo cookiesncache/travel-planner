@@ -22,7 +22,7 @@ Works for any trip type:
 
 Adapts based on who's traveling, whether you have kids, and what's happening with your pets.
 
-🧭 For road trips and multi-stop trips, it runs a **feasibility check before you book** — estimating travel times (driving, flights, trains, ferries, door-to-door) and flagging over-packed days, "sightseeing" days that are really transit, and base towns that don't match the day's plan, with sources and concrete rebalancing options. Catch the unrealistic days while moving a night is still free, not after the hotels are paid for.
+🧭 For road trips and multi-stop trips, it runs a **feasibility check before you book** — estimating travel times (driving, flights, trains, ferries, door-to-door) *and the time meals actually eat* (the detour plus sitting down), then flagging over-packed days, days that would miss a check-in cutoff or dinner reservation, "sightseeing" days that are really transit, and base towns that don't match the day's plan — with sources and concrete rebalancing options. Catch the unrealistic days while moving a night is still free, not after the hotels are paid for.
 
 ✨ Connectors are detected automatically at the start of each session — add one anytime and the plugin will start using it on your next trip. Switch apps by disconnecting the old one and connecting the new one; no reconfiguration needed.
 

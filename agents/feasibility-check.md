@@ -27,9 +27,13 @@ The path to the travel plan markdown file, plus any trip context (trip type, who
    - **Flights especially: count the whole-day cost** — getting to the airport, ~2 h check-in/security, boarding, air time, deplaning/bags, and the transfer into the next city. A "90-minute flight" routinely eats 5–6 hours of the day.
    - **Trains** have less overhead (arrive ~20–30 min before); **ferries** are schedule-bound (check sailing times — a missed sailing can cost hours). **Driving** legs also get a distance.
    - Prefer a WebSearch for the typical time for that mode (e.g. "driving time Joshua Tree to Yosemite Valley", "train time Paris to Lyon", "flight time Tokyo to Osaka" + airport overhead, "ferry schedule Split to Hvar") and cite the source; if search is unavailable or inconclusive, fall back to your own knowledge and mark that leg **low confidence**. Never invent a precise number you cannot support — give a range and lower the confidence.
-3. **Sum the day's travel time** (door-to-door across all legs) and compare against the thresholds in `references/feasibility-integration.md`.
-4. **Check each flag type** (definitions and thresholds in that reference): over-packed travel, mislabeled transit day, rushed stop, under-used stop, geographically inconsistent lodging, departure-day backtrack.
-5. **For every flag, give at least one concrete rebalancing option** framed as still-cheap-to-change (move a night, change a base town, reorder stops, split a transit day, drop or shorten a stop).
+3. **Account for meals as time costs.** For each eatery the day lists:
+   - **Detour** — the *extra* travel to divert to it and rejoin the route, measured against the day's through-route (not absolute distance): on-route ≈ 0; ~20 min off-route ≈ ~40 min round trip. Estimate via WebSearch where it's material, with confidence + source.
+   - **Dining block** — a duration by venue type (popular sit-down ~75–90 min incl. wait, standard sit-down ~60 min, casual counter ~30–45 min, tasting ~120 min — see the reference). A "lunch" on a long transfer day is often a mid-afternoon *arrival* meal; place it in the timeline accordingly.
+4. **Total the day including meals** — travel legs (door-to-door) + activity/stop time + meal detours + dining blocks — and compare against the thresholds in `references/feasibility-integration.md` and the usable daytime.
+5. **Check hard deadlines.** If the day has a hard time wall — a lodging check-in / front-desk cutoff, a timed dinner reservation, a tour start — build the meal-inclusive timeline (legs + activities + meal detours + dining placed in clock time) and test whether it's met; flag any deadline the day would miss or only barely make.
+6. **Check each flag type** (definitions and thresholds in that reference): over-packed travel, over-packed day (meal-inclusive total over available time), mislabeled transit day, rushed stop, under-used stop, geographically inconsistent lodging, departure-day backtrack, deadline risk.
+7. **For every flag, give at least one concrete rebalancing option** framed as still-cheap-to-change (move a night, change a base town, reorder stops, split a transit day, swap a sit-down for a quicker stop, move a reservation earlier, choose lodging with late/self check-in, or drop or shorten a stop).
 
 ## Quality standards
 
@@ -46,7 +50,9 @@ Return a structured report in markdown, not prose paragraphs:
 - **Per flagged day:**
   - Date and label.
   - Legs — each as `from → to (mode) — ~Xh door-to-door [≈Y mi if driving] (confidence; source)`.
-  - Total travel time for the day.
+  - Meals — each as `<venue> — detour ~Xm + dining ~Ym (venue type; confidence; source)`.
+  - Day total — travel + activities + meals, against the usable daytime.
+  - Deadline check (when the day has one) — `<deadline>: met | at risk | missed`, with the meal-inclusive arrival/finish time.
   - Flags — each as `[flag-type] detail (confidence; source)`.
   - Rebalancing options — at least one concrete option.
 - **Days that are fine** — list briefly so the user knows they were checked.
