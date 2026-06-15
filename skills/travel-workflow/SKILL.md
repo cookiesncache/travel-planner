@@ -1,7 +1,7 @@
 ---
 name: travel-workflow
 description: >
-  This skill plans any trip end-to-end using a 5-step workflow. It applies
+  This skill plans any trip end-to-end using a multi-step workflow. It applies
   when the user says "plan my trip", "help me organize a trip", "travel
   checklist", "what do I need for my vacation", "I'm traveling to X",
   "I'm going to X", "I'm heading to X", "planning a trip to X",
@@ -14,7 +14,7 @@ description: >
 
 # Travel Workflow
 
-Guide the user through planning their trip using the 5-step workflow below.
+Guide the user through planning their trip using the multi-step workflow below.
 
 ## The Travel Plan
 
@@ -45,7 +45,7 @@ Reconcile the travel plan:
 1. **Resolve ambiguity first.** Read `.claude/travel-planner.local.md` if it exists — its `trips` list names every known trip and its plan file, with `active_trip` as the default (see `references/sync-protocol.md`). If the request could match more than one trip, ask which they mean. If the state file is missing, scan the project directory for `*-itinerary.md` plan files before concluding there's nothing. Only if none is found anywhere, surface this explicitly and ask whether to start fresh.
 2. **Reconcile against connectors and email — both directions, then propose.**
    - **Additive (new/changed in email):** run the read-only `booking-intel` agent to scan email; it returns `missing` confirmations, `flagged` items, and `cancelled`/changed items, already cross-referenced against the plan (Sync State remote IDs matched; `declined` rows skipped). See `references/email-integration.md` for how to handle each.
-   - **Subtractive (gone from connectors):** read each connected tool and diff it against `## Sync State` — a `synced` row whose remote item no longer exists is `orphaned`; a task completed in the app becomes a status change. (This reconciliation stays in the main thread — see `references/sync-protocol.md`.)
+   - **Subtractive (gone from connectors):** read each connected tool and diff it against `## Sync State`. Only treat a `synced` row as `orphaned` when the read is **conclusive** — a direct fetch of its remote ID returns not-found, or a complete/unfiltered listing omits it; a partial/scoped read, a tool error, or a task merely filtered out because it's closed is **not** an orphan. A task completed in the app is a status change, not an orphan — fetch completed tasks too. (This reconciliation stays in the main thread — see `references/sync-protocol.md`.)
    - **Propose, don't apply:** present everything — additions (from `missing`), removals/flags (from `cancelled`/`orphaned`), status changes — and get the user's confirmation before writing (gate 1). Then apply per `sync-protocol.md` (re-status rows; connector cleanup via the export gate). The plan is the deduplication anchor; never re-surface a `declined`, `cancelled`, or `orphaned` item as new.
 3. **Confirm the baseline.** Present the plan to the user and get explicit confirmation before proceeding — do not begin writing until the user approves.
 4. **Route by trip dates:**
@@ -59,7 +59,7 @@ Only ask about what genuinely can't be inferred. Summarize what you found, then 
 
 ### First-time user (no travel plan yet)
 
-If email is connected, run the read-only `booking-intel` agent to surface booking confirmations matching the trip (and any cancellations) before generating the baseline plan; present anything not yet captured for the user to confirm. As soon as the destination is known, write the state file (see `references/sync-protocol.md`) so the trip is discoverable. If the user declines any surfaced booking *before* the plan file exists, remember it and record its `declined` row when the plan is created in Step 2 — otherwise it re-surfaces next session.
+If email is connected, run the read-only `booking-intel` agent to surface booking confirmations matching the trip (and any cancellations) before generating the baseline plan; present anything not yet captured for the user to confirm. There's no plan or Sync State yet, so a `cancelled` finding just means **don't add that as a booking** — and if a `missing` confirmation for the same vendor/dates is also surfaced, treat it as cancelled (don't add it), seeding a `cancelled` row when the plan is created in Step 2. As soon as the destination is known, write the state file (see `references/sync-protocol.md`) so the trip is discoverable. If the user declines any surfaced booking *before* the plan file exists, remember it and record its `declined` row when the plan is created in Step 2 — otherwise it re-surfaces next session.
 
 Gather intake, then generate the baseline travel plan. Only ask for what can't be inferred from connected tools or the conversation:
 - **Destination and dates** — infer from the user's message if possible

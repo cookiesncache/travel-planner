@@ -29,11 +29,11 @@ Where possible, narrow by confirmations whose **content references dates in the 
 
 ## What to extract
 
-Only: booking type, vendor, date(s), confirmation number, and — for a cancellation — what it cancels or changes. **Do not read or summarize full email bodies.** Note a light reference to each source email (subject + sender) so the user can verify; never the body.
+Only: booking type, vendor, date(s), confirmation number, **amount / total / price where the confirmation states it**, and — for a cancellation — what it cancels or changes. (These are structured confirmation fields, not a body summary, so extracting them does not violate the no-body rule.) **Do not read or summarize full email bodies.** Note a light reference to each source email (subject + sender) so the user can verify; never the body.
 
 ## Cross-reference against the plan
 
-- **Confirmations:** surface one only if it is NOT already represented — skip anything whose confirmation / remote ID already appears in `## Sync State`, and skip anything matching a `declined` row.
+- **Confirmations:** surface one only if it is NOT already represented. Match its **confirmation number** against the plan's **Bookings / Spending Tracker** (the `Confirmation #` column) — *not* against Sync State's Remote ID column, which holds connector IDs (calendar event / task IDs), a different identifier space. Skip anything already captured there, and skip anything matching a `declined`, `cancelled`, or `orphaned` item.
 - **Cancellations / changes:** match them to existing plan items by confirmation number, or by vendor + dates. Report the matched item so the main thread can act; if there's no match, report it as informational.
 
 ## Classify each finding
@@ -48,8 +48,8 @@ Return a structured digest — its content IS your return value, not a message t
 
 ```
 {
-  missing:   [ { type, vendor, dates, ref, emailRef } ],
-  flagged:   [ { type, vendor, dates, issue, emailRef } ],
+  missing:   [ { type, vendor, dates, ref, amount, emailRef } ],
+  flagged:   [ { type, vendor, dates, issue, amount, emailRef } ],
   cancelled: [ { type, vendor, dates, planItem, emailRef } ],
   searchedTerms: [ ... ],
   notes: "..."   // e.g. "email not connected", coverage caveats
