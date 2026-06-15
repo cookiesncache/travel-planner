@@ -105,33 +105,35 @@ All concerns resolved through v0.3.0. Architecture settled on a single orchestra
 
 ---
 
-## Booking Intel Agent
+## Booking Intel Agent — ✅ implemented (widened to cancellations)
 
-Extract email booking discovery into a dedicated agent. Currently, email scanning is handled by inline prose instructions in `references/email-integration.md`, which means Claude does ad-hoc inbox searches with no structured output. An agent encapsulates the noise and returns clean, plan-aware data.
+Email booking discovery is now a dedicated **read-only** agent (`agents/booking-intel.md`) instead of inline prose. It was widened past the original additive-only scope to also surface **cancellations / changes** — which, together with main-thread connector reconciliation, closes the subtractive-reconcile gap (cancelled bookings, deleted/orphaned connector items). It returns a structured, plan-aware digest; the **main thread** reconciles and commits through the gates.
 
 ### What it does
 
-Given the current travel plan and trip context (destination, dates), the agent searches email and returns a structured digest cross-referenced against the plan:
+Given the plan + trip context, it scans email once and returns:
 
 ```
 {
-  missing: [ { type, vendor, dates, ref } ],   // found in email, not yet in plan
-  flagged: [ { type, vendor, dates, issue } ], // structurally incomplete or payment rejected
+  missing:   [ { type, vendor, dates, ref, emailRef } ],   // valid, not yet in plan
+  flagged:   [ { type, vendor, dates, issue, emailRef } ], // incomplete or payment-rejected
+  cancelled: [ { type, vendor, dates, planItem, emailRef } ], // cancellation/change of a plan item
 }
 ```
 
-### Why an agent
+### Division of responsibility
 
-- **Encapsulation:** inbox scanning is noisy — the agent absorbs raw email content and returns only the structured fields the skill needs
-- **Reusability:** called from Step 1.2 (reconcile) for returning users, and could power a standalone `/scan` slash command
-- **Cleaner main thread:** the skill receives a tidy summary instead of interleaving raw search results with planning steps
+- **Agent (read-only):** the noisy inbox pass → the digest above. Extracts only booking fields + a light source ref; never reads full bodies; never writes email/plan/connector.
+- **Main thread:** reconciles and commits — adds `missing` (gate 1), handles `flagged`/`cancelled`, and does the **connector-side subtractive check** (diff each `synced` row against the live connector → `orphaned`), proposing every change and confirming before writing.
 
-### Changes required
+### Done (this build)
 
-- Add `agents/booking-intel.md` defining the agent, its inputs (plan + trip context), and its output schema *(flat `agents/<name>.md` — the auto-discovered convention; not a nested `AGENT.md`)*
-- Update `SKILL.md` Step 1.2 to call the agent instead of pointing to `email-integration.md` inline
-- Update `references/email-integration.md` to describe agent behavior and output schema
-- **No connector/plan writes from the agent itself.** Per the read-only-subagent constraint (`sync-protocol.md`, P2-5), Booking Intel reads email and **returns data only**; the main thread adds to the plan and exports, so the main-thread Stop hook already covers recording. No SubagentStop mirror is needed as long as the agent makes no writes of its own.
+- ✅ `agents/booking-intel.md` — read-only agent; `tools` omitted so it can reach the connected email MCP (whose tool names are per-connector), with read-only enforced by the prompt.
+- ✅ `SKILL.md` Step 1 — invokes the agent (returning + first-time) and adds main-thread subtractive reconciliation; propose-then-confirm (gate 1) before any write.
+- ✅ `references/email-integration.md` — reworked to the agent digest + per-state main-thread handling (incl. `cancelled`).
+- ✅ `references/sync-protocol.md` — added `cancelled` and `orphaned` statuses + the Cancellation & orphan recording rule; Spending Tracker recalcs on cancel/orphan.
+- **No SubagentStop needed** — the agent makes no writes (read-only-subagent constraint); the main thread + its gates cover all commits.
+- ✅ **Validated (2026-06-14)** against the real connected Gmail + the booked California plan: dedup correctly skipped all 8 already-synced confirmations, scoped out unrelated trips, did **not** false-flag Airbnb "free cancellation policy" boilerplate as a cancellation, invented nothing, and stayed read-only (`missing`/`flagged`/`cancelled` all empty — the plan was fully reconciled). Caveat: the inbox had no genuinely-missing or cancelled item for this trip, so the positive-surface path is inferred, not yet directly observed.
 
 ---
 
@@ -178,6 +180,40 @@ Validated live (WebSearch) against a pre-booking draft of the California trip (`
 **✅ Validated (2026-06-14, live WebSearch):**
 - **Multi-modal (v0.8.2)** on a Europe flight+train+ferry draft (`Projects/Travel/europe-multimodal-draft.md`): the agent inferred each leg's mode, counted door-to-door — the Avignon→Athens day at ~8–9 h (get-to-airport + international overhead + air + the +1 h timezone shift + airport→city) and the Piraeus→Santorini ferry at ~7 h+ schedule-bound — and flagged the right transit/over-packed/deadline days while passing the fine ones.
 - **Meals + hard deadlines (v0.8.3)** on a California draft (`Projects/Travel/california-meal-deadline-draft.md`): **Sep 20** correctly flagged `deadline-risk` on three stacked walls (Keys View sunset, Pappy & Harriet's last-seating + wait, the 9:30 PM front-desk cutoff) once meal time was counted; **Sep 26** correctly confirmed the vineyard-tasting → drive → 7 PM-reservation timeline as feasible. No false flags on fine days.
+
+---
+
+## Activity & Dining Discovery Agent *(feature)*
+
+A read-only agent that, given the trip's destinations, dates, and the traveler's preferences/context, searches **broadly** for events, activities, and dining and surfaces them for the user to pick from — turning a thin baseline itinerary into a rich one without Claude guessing what the user wants.
+
+### What it does
+Reviews the plan's preference signals — trip type, who's traveling (solo/couple/group/family + kids' ages), pets, stated interests, budget, and each day's destination and dates — and runs broad WebSearches for:
+- **Events** happening *during the trip dates* at each destination (concerts, festivals, sports, exhibitions, seasonal happenings).
+- **Activities & attractions** (sights, tours, outdoors, neighborhoods) matched to the traveler context.
+- **Dining** (notable spots, local specialties, reservation-worthy places), scaled to budget and group.
+
+Surfacing is deliberately **broad** — a wide net across categories and price points. Each candidate carries name, type, when/where, a one-line why-it-fits, rough cost, and a source + confidence. The agent is **read-only**: it returns candidates as data and never writes the plan or books.
+
+### Surfacing & selection (native multi-select)
+The main thread presents the candidates back as **one or more native multi-select prompts** (AskUserQuestion, `multiSelect: true`) — e.g. one per category (Events / Activities / Dining) or per day — so the user ticks exactly what they want. Selected items are added to the itinerary (gate 1), placed on appropriate days, and flow downstream: **dining picks feed the Step 3 feasibility check's meal-time math, dated events become fixed anchors the feasibility check respects**, and reservation-worthy picks become tasks (Step 5).
+
+### Where it runs
+In **Step 2 (Itinerary)**, after the baseline plan exists and before **Step 3 (Feasibility)** — so the feasibility check sees the enriched plan (chosen activities + meal time + dated events), not a skeleton. Re-runnable on request ("find me more to do in X").
+
+### Why an agent
+Broad, multi-category, date-bounded search is noisy; a dedicated agent absorbs it and returns a clean categorized candidate set — same pattern as Booking Intel and feasibility. Read-and-report (per the connector-writes-main-thread-only rule, P2-5), so no SubagentStop hook.
+
+### Changes required
+- Add `agents/activity-discovery.md` — inputs (plan + preferences + dates/destinations), broad-search instructions, the categorized candidate output schema, read-only.
+- Update `SKILL.md` Step 2 — after the baseline, invoke the agent, present native multi-select(s), add selections (gate 1), then proceed to Step 3.
+- Add `references/discovery-integration.md` — preference signals to use, category coverage, date-bounding for events, how candidates map to plan items/tasks, and the multi-select presentation pattern (how to chunk so the user isn't overwhelmed).
+- README + this ROADMAP.
+
+### Open questions
+- Chunking of the multi-selects (per-category vs per-day) to avoid overwhelming the user.
+- Dedup against items already in the plan and against `declined` Sync State rows.
+- Budget interplay — surface above-budget options flagged, or omit them?
 
 ---
 

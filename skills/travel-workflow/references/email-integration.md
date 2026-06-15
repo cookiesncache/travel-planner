@@ -1,29 +1,22 @@
 # Email Integration
 
-Only use this if an email app is connected.
+Only use this if an email app is connected. Email booking discovery is handled by the **`booking-intel` agent** (read-only) — it scans the inbox and returns a structured digest; this file describes that digest and how the **main thread** acts on it. The agent never writes; the main thread proposes, the user confirms (gate 1), and all writes/exports go through the usual gates.
 
-## What to Search For
+## The agent's digest
 
-Run targeted searches for booking confirmations:
-- Flights: "flight confirmation", "flight booking", "e-ticket"
-- Hotels: "hotel reservation", "hotel confirmation"
-- Rental cars: "rental car reservation", "car hire confirmation"
-- Tours / attractions: "booking confirmation", "ticket", "reservation"
+`booking-intel` returns three lists, cross-referenced against the plan (Sync State remote IDs matched; `declined` rows skipped):
 
-Where possible, narrow searches by looking for confirmations whose content references dates within the trip date range — not by filtering emails by their received date.
+- `missing` — valid confirmations not yet in the plan.
+- `flagged` — structurally incomplete (missing return leg, no confirmation number) or payment-rejected.
+- `cancelled` — cancellations or material changes to items in the plan.
 
-## What to Do With Results
+It extracts only booking type, vendor, date(s), confirmation number, and a light source reference — never full email bodies. See `sync-protocol.md` for statuses.
 
-- Extract only: booking type, vendor, date(s), and confirmation number where available
-- Do not read or summarize full email content
-- Cross-reference against the travel plan: surface a booking if it is not yet in the plan, regardless of whether it appears in any other connected tool. If it's already in the plan, don't re-surface it. Check the plan's Sync State first — anything with a `declined` row is never re-surfaced unless the user asks (see `sync-protocol.md`).
-- For anything missing, offer to add it to the plan (including confirmation number). Once confirmed, offer to export to the relevant connectors.
+## Handling each result (main thread)
 
-When a booking is captured to the plan as confirmed, add a Spending Tracker row for it — see `itinerary-integration.md` for the row format and total/remaining handling. Use the amount from the confirmation if present; if absent, follow the unknown-amount handling there. Do not add a tracker row for bookings that are not captured as confirmed (e.g. payment-rejected).
+- **`missing` — valid confirmation:** offer to add it to the plan (gate 1; user-directed additions act directly). Once captured, add its Spending Tracker row and Sync State row in the same write (use the confirmation amount if present; otherwise the unknown-amount handling in `itinerary-integration.md`). If the user declines, record a `declined` row so it's never re-surfaced. If the confirmation fulfills an open task (e.g. a flight fulfills "Book flights"), follow the completion-sync rule in `task-integration.md` — ask, then call the app's completion action.
+- **`flagged` — structurally incomplete:** flag the gap before adding; do not add silently.
+- **`flagged` — payment rejected:** confirm with the user, then flag the corresponding plan item `needs-attention` and create a task to resolve it; do not add as a confirmed booking and do not add a Spending Tracker row. If no matching item is found, surface it and ask whether to add a placeholder task to investigate.
+- **`cancelled`:** surface it and confirm before changing anything; then set the item's Sync State row to `cancelled`, remove or flag it in the plan body, recalculate the Spending Tracker, and make any connector cleanup (delete the leftover calendar event, close the task) through the export gate (`ask`). See the **Cancellation & orphan** rule in `sync-protocol.md`.
 
-If the confirmed booking fulfills an open task (e.g. a flight confirmation fulfills "Book flights"), follow the completion-sync rule in `task-integration.md` — ask the user, then call the app's completion action.
-
-Handle each confirmation according to its state:
-- **Valid confirmation** — offer to add it to the plan (gate 1 — see `sync-protocol.md`; user-directed additions act directly). Once captured, add its Spending Tracker row and Sync State row in the same write. If the user declines, record a `declined` row so it is never re-surfaced.
-- **Structurally incomplete** (missing return leg, no confirmation number) — flag the gap before adding; do not add silently
-- **Payment rejected or declined** — confirm with the user before making any changes, then flag the corresponding booking in the plan as "needs attention" (Sync State status `needs-attention`) and create a task to resolve it; do not add as a confirmed booking and do not add a Spending Tracker row. If no matching booking is found in the plan, surface the rejected confirmation to the user with a summary and ask whether to add a placeholder task to investigate.
+All of the above is additive/subtractive *email* reconciliation. The matching *connector-side* subtractive check (a `synced` row whose remote item was deleted → `orphaned`) is done by the main thread during Step 1 reconcile — also per `sync-protocol.md`.
