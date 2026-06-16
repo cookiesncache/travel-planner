@@ -1,6 +1,6 @@
 {
   "name": "travel-planner",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Guides Claude through planning any trip end-to-end — road trips, flights, international travel, city breaks — using a multi-step workflow built around a connector-agnostic travel plan that syncs with your calendar, itinerary, and task apps.",
   "author": {
     "name": "cookiesncache"

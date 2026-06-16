@@ -33,7 +33,7 @@ Only: booking type, vendor, date(s), confirmation number, **amount / total / pri
 
 ## Cross-reference against the plan
 
-- **Confirmations:** surface one only if it is NOT already represented. Match its **confirmation number** against the plan's **Bookings / Spending Tracker** (the `Confirmation #` column) — *not* against Sync State's Remote ID column, which holds connector IDs (calendar event / task IDs), a different identifier space. Skip anything already captured there, and skip anything matching a `declined`, `cancelled`, or `orphaned` item.
+- **Confirmations:** surface one only if it is NOT already represented. Match its **confirmation number** against the plan's **Bookings / Spending Tracker** (the `Confirmation #` column) — *not* against Sync State's Remote ID column, which holds connector IDs (calendar event / task IDs), a different identifier space. Skip a confirmation whose number is already captured there. Also skip it if it matches a `declined`, `untracked`, `cancelled`, or `orphaned` item — matching by the **same booking identity**: the same confirmation number / remote ID, or (for items with no stored number, e.g. `untracked`) the same vendor + dates from the Sync State row. But a **new** confirmation number for the same vendor + dates of a `cancelled`/`orphaned`/`declined` item is a *re-booking*, not a duplicate — surface it.
 - **Cancellations / changes:** match them to existing plan items by confirmation number, or by vendor + dates. Report the matched item so the main thread can act; if there's no match, report it as informational.
 
 ## Classify each finding
