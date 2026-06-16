@@ -4,7 +4,7 @@ The calendar is a bidirectional sync target for the travel plan (the source of t
 
 ## What to Export
 
-This governs **Step 4 itinerary export** — what trip *content* becomes calendar events. Create calendar events only for the following:
+This governs **Step 4 itinerary export** — what trip *content* becomes calendar events. Before creating any events, present them in one native `AskUserQuestion` (gate 2) naming what will be created and in which calendar, and create only the ones the user selects — see `sync-protocol.md`. Create calendar events only for the following:
 
 - **Trip block** — a single event spanning the full trip (departure to return); specific times if known, otherwise all-day. Title: destination(s) — e.g. "Tokyo & Kyoto" or "California Road Trip".
 - **Flights** — one event per leg, spanning that leg's departure to arrival; origin airport as location, destination airport plus airline and flight number in the description. A multi-leg or connecting itinerary gets a separate event for each leg.

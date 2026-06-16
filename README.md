@@ -48,15 +48,15 @@ If connected, the plugin scans for booking confirmations and flags anything miss
 
 ## 🔒 How it stays reliable
 
-Two built-in hooks enforce the plan-is-source-of-truth rule mechanically — no setup needed:
+Two things keep the plan-is-source-of-truth rule reliable — no setup needed:
 
-- **Confirm before write** — before Claude writes anything to a connected app, it shows you a native prompt listing exactly what it'll create and in which app (one prompt for a whole batch, where you pick which to add). Nothing is written until you approve.
-- **Sync-back check** — before Claude finishes a turn, the hook verifies that everything it pushed to or pulled from your apps is recorded back in the travel plan, so the plan never silently drifts behind.
+- **Confirm before write** — before Claude writes anything to a connected app, it shows you a native prompt listing exactly what it'll create and in which app (one prompt for a whole batch, where you pick which to add). Nothing is written until you approve. This confirmation happens in the conversation, not as a hook.
+- **Sync-back check** *(a built-in hook)* — before Claude finishes a turn, the hook verifies that everything it pushed to or pulled from your apps is recorded back in the travel plan, so the plan never silently drifts behind.
 
-In sessions where you aren't travel planning, both hooks resolve right away via a fast allow and let Claude carry on. Your plan file carries a **Sync State** section — a small ledger of what's synced where (and what you've declined, so it's never suggested again).
+In sessions where you aren't travel planning, the sync-back hook resolves right away via a fast allow and lets Claude carry on. Your plan file carries a **Sync State** section — a small ledger of what's synced where (and what you've declined, so it's never suggested again).
 
 Worth knowing:
-- The hooks run a quick check each turn, so they add a little latency even outside travel planning. If you travel only occasionally, you can disable the plugin between trips and re-enable it when you need it.
+- The sync-back hook runs a quick check at the end of each turn, so it adds a little latency even outside travel planning. If you travel only occasionally, you can disable the plugin between trips and re-enable it when you need it.
 - The plugin keeps a small state file at `.claude/travel-planner.local.md` in your project so it can find your trip across sessions. If the project is a git repository, add `*.local.md` to `.gitignore`.
 - After installing or updating the plugin, start a fresh session — hooks load at session start.
 

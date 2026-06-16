@@ -12,10 +12,10 @@ The PreToolUse **export-gate hook** (which returned `ask` so the harness showed 
 
 The sync-back check hook is prompt-based and relies on a few runtime behaviors worth verifying once with `claude --debug` — ideally on a Windows machine. *(The export-gate hook was retired in v0.9.3 — see above; its `ask`/matcher checklist items below are superseded.)*
 
-- [ ] Both hooks register at session start (`/hooks` shows them; no schema errors)
-- [ ] The PreToolUse matcher fires on a real connector write (e.g. Todoist `add-tasks`) and does NOT fire on reads (`find-tasks`, `list_events`)
-- [ ] In a non-travel session, a matched write resolves via the fast-path allow with no visible friction
-- [ ] Gate flow works end-to-end: unconfirmed export → deny → Claude confirms with user → retry → allow
+- [ ] The sync-back hook registers at session start (`/hooks` shows it; no schema errors) *(was "both hooks" — only the Stop hook ships since v0.9.3)*
+- [x] ~~The PreToolUse matcher fires on a real connector write … and does NOT fire on reads~~ — **SUPERSEDED (v0.9.3):** the PreToolUse export-gate hook and its matcher were removed; gate 2 is now a main-thread `AskUserQuestion`.
+- [ ] In a non-travel session, the Stop hook resolves via the fast-path allow with no visible friction
+- [x] ~~Gate flow works end-to-end: unconfirmed export → deny → confirm → retry → allow~~ — **SUPERSEDED (v0.9.3):** gate 2 no longer uses a hook deny/retry; it is a native `AskUserQuestion` in the main thread.
 - [ ] Stop hook blocks when an export was made but not recorded in Sync State, and approves after recording (no block loop)
 - [x] ~~write tools whose names don't start with a matched verb (e.g. `project-move`) bypass the gate~~ — addressed by **P0-2** below (matcher broadened; `project-move`, Notion, camelCase now caught). Re-verify the broadened matcher against real connectors during `claude --debug`.
 
@@ -100,7 +100,7 @@ The returning-user route sends a passed trip to Step 4 only; deadline-bound Foll
 Apple Calendar/Reminders/Things on Desktop are driven via computer-use, whose tool names never match `mcp__`. The README overclaimed "before Claude writes to any connected app." ✅ **fixed:** the README and `hooks.json` description are scoped honestly to MCP connectors (with a note that screen-driven apps fall back to the prose confirm-first rule), and `sync-protocol.md`'s "never work around a hook" rule now states that non-MCP write paths (screen, browser, shell) are gate-2 prose territory, not mechanically gated.
 
 **P2-2 · "No-op instantly" overstates hook cost** *(improvement)*
-Both hooks are prompt (LLM) evaluations; the Stop check runs at the end of *every* turn in *every* enabled session. ✅ **fixed:** `hooks.json` description and README now say the hooks "resolve via a fast-path allow," and the README notes the small per-turn cost and that infrequent travelers can disable the plugin between trips.
+Both hooks are prompt (LLM) evaluations; the Stop check runs at the end of *every* turn in *every* enabled session. ✅ **fixed:** `hooks.json` description and README now say the hook "resolves via a fast-path allow," and the README notes the small per-turn cost and that infrequent travelers can disable the plugin between trips. *(Updated by v0.9.3: only the Stop hook remains — the README and this note now describe one hook, not two.)*
 
 **P2-3 · `task-integration.md` missing the state-file recording line** *(improvement)*
 Two of three sibling integration files tell Claude to record the chosen app in the state file; `task-integration.md`'s multiple-apps sentence didn't. ✅ **fixed:** added the recording clause to `task-integration.md` and to the central multiple-tools rule in `capabilities.md`.

@@ -26,7 +26,7 @@ Example output format:
 
 ## Suggesting and Adding Tasks
 
-Always present suggestions before creating anything. Group by category. Let the user pick which to add. Skip suggestions clearly irrelevant to the trip type.
+Always present suggestions before creating anything: put them in one native `AskUserQuestion` (gate 2) naming the tasks and the target app, and create only the ones the user selects — see `sync-protocol.md`. Group by category. Skip suggestions clearly irrelevant to the trip type.
 
 When the user confirms, create tasks with:
 - A clear, action-oriented title
@@ -44,7 +44,7 @@ If the project has no sections, offer to add them using the category names from 
 Completions flow to the task app in two cases:
 
 - **User marks a task complete** during the session (in the plan or conversation) — export that status change to the task app (gate 2 — see `sync-protocol.md`).
-- **A confirmed booking fulfills an open task** — when a booking is confirmed and updated in the plan (e.g. a flight confirmation fulfills "Book flights"), ask the user before marking the corresponding task complete in the task app.
+- **A confirmed booking fulfills an open task** — when a booking is confirmed and updated in the plan (e.g. a flight confirmation fulfills "Book flights"), confirm before marking the corresponding task complete in the task app (gate 2 — see `sync-protocol.md`).
 
 Either way, update the task's Sync State row (Last action) in the same step.
 
