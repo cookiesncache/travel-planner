@@ -1,8 +1,16 @@
 # Roadmap
 
+## Export gate retired → main-thread AskUserQuestion (v0.9.3)
+
+The PreToolUse **export-gate hook** (which returned `ask` so the harness showed a native approve/deny prompt — gate 2) has been **removed**. In Cowork the hook's `ask` did not reliably render a native prompt: it intermittently surfaced the hook's reasoning as a `PreToolUse` error and *blocked* the write, worst for **batched** writes (notably `add-reminders`), nondeterministically (see `BUG_PROMPT_export-gate-no-native-prompt.md`). The root cause is the harness's `ask`→native-prompt path — worth an upstream report; the plugin can't fix it.
+
+**Gate 2 is now confirmed in the main thread via a native `AskUserQuestion`** — one prompt per batch, user selects which items to export — which renders reliably and fixes the batch case. The Stop **sync-back check** hook is unchanged (and removing the PreToolUse hook also drops its per-write latency). Trade-off: gate 2 is now prose-driven (the main thread must remember to ask) rather than hook-mechanical — but the hook version was *actively blocking confirmed writes*, so this is strictly more functional. The `ask`-based gate cases in the verification checklist below are superseded.
+
+---
+
 ## v0.7.0 Pre-Release Verification
 
-The v0.7.0 hooks (export gate, sync-back check) are prompt-based and rely on a few runtime behaviors worth verifying once with `claude --debug` — ideally on a Windows machine — before tagging the release:
+The sync-back check hook is prompt-based and relies on a few runtime behaviors worth verifying once with `claude --debug` — ideally on a Windows machine. *(The export-gate hook was retired in v0.9.3 — see above; its `ask`/matcher checklist items below are superseded.)*
 
 - [ ] Both hooks register at session start (`/hooks` shows them; no schema errors)
 - [ ] The PreToolUse matcher fires on a real connector write (e.g. Todoist `add-tasks`) and does NOT fire on reads (`find-tasks`, `list_events`)
@@ -23,7 +31,13 @@ The hook prompts are LLM-evaluated, so their *logic* needs scenario testing, not
 - [ ] **S5 — export made, nothing recorded** → **block**, then **approve** after recording (no loop)
 - [ ] **S6 — compacted history**: writes clearly happened, recording unconfirmable → **block once** with re-read instruction, then **approve** on retry (anti-loop holds)
 
-**PreToolUse gate (export gate):**
+**Gate 2 confirmation — main-thread `AskUserQuestion` (replaces the retired export-gate hook, v0.9.3):**
+- [ ] Before a connector export, Claude presents a native `AskUserQuestion` naming what will be created and in which app, and exports only the selected items — verified for a **single** write and a **batch** (e.g. several `add-reminders` in one prompt; the case the old hook `ask` broke).
+- [ ] No connector write happens without that confirmation, unless the user directed it in their own words.
+
+*The `ask`-hook G-cases below are SUPERSEDED — the export-gate hook no longer exists. Kept for history:*
+
+**PreToolUse gate (export gate) — superseded:**
 - [ ] **G1 — plugin meta-session** where a matched write tool fires → **allow** (activation excludes discussing/developing the plugin)
 - [ ] **G2 — active-trip travel export with no prior chat confirmation** → **ask** (v0.7.2 gate never denies; the native prompt is where the user declines if unwanted)
 - [ ] **G3 — unrelated write** (groceries to Todoist) mid-travel-session → **allow**

@@ -50,7 +50,7 @@ If connected, the plugin scans for booking confirmations and flags anything miss
 
 Two built-in hooks enforce the plan-is-source-of-truth rule mechanically — no setup needed:
 
-- **Export gate** — when Claude is about to write to a connected app, the hook surfaces a native approve/deny prompt so you confirm that specific change before it happens. (This covers apps Claude reaches through their MCP tools. A few apps Claude drives by controlling the screen instead aren't caught by the hook — the same confirm-first rule still applies there, just without the mechanical backstop.)
+- **Confirm before write** — before Claude writes anything to a connected app, it shows you a native prompt listing exactly what it'll create and in which app (one prompt for a whole batch, where you pick which to add). Nothing is written until you approve.
 - **Sync-back check** — before Claude finishes a turn, the hook verifies that everything it pushed to or pulled from your apps is recorded back in the travel plan, so the plan never silently drifts behind.
 
 In sessions where you aren't travel planning, both hooks resolve right away via a fast allow and let Claude carry on. Your plan file carries a **Sync State** section — a small ledger of what's synced where (and what you've declined, so it's never suggested again).
