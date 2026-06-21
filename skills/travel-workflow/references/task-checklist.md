@@ -9,7 +9,7 @@ Use this as a reference when auditing trip tasks. Map existing tasks against the
 | **Road trip** | Skip flight items; add vehicle prep (fuel, tires, roadside kit) |
 | **Domestic flight** | Skip passport/visa/health entry items |
 | **International** | Include full Admin section |
-| **City break** | Light logistics; skip most Admin unless international |
+| **City break** | Light logistics; **if domestic**, skip the full Admin section (no passport/visa/insurance/health items); **if international**, treat as international — include the full Admin section; trip type doesn't reduce the Admin requirement when crossing a border |
 | **Multi-destination** | Add inter-destination transport; flag lodging gaps between stops |
 
 ## Define

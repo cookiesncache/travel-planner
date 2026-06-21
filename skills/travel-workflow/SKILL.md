@@ -49,11 +49,11 @@ Reconcile the travel plan:
    - **Propose, don't apply:** present everything — additions (from `missing`), removals/flags (from `cancelled`/`orphaned`), status changes — and get the user's confirmation before writing (gate 1). Then apply per `sync-protocol.md` (re-status rows; connector cleanup after gate-2 confirmation). The plan is the deduplication anchor; never re-surface a handled item as new — but a *new* confirmation number for the same vendor + dates of a `cancelled`/`orphaned` item is a re-booking, so surface it.
 3. **Confirm the baseline.** Present the plan to the user and get explicit confirmation before proceeding — do not begin writing until the user approves.
 4. **Route by trip dates:**
-   - Trip is in the future → run the full workflow (Steps 2–6)
-   - Trip is in progress → Steps 2, then 4–6 (scoped to The Trip tasks); skip the feasibility check (Step 3) — the trip is already underway
-   - Trip has fully passed → Steps 5 and 6, scoped to the Follow-up checklist (deadline-bound follow-ups — insurance-claim windows, equipment returns — still get reminders); when Follow-up wraps up, set that trip's `status: done` in the state file
+   - Trip is in the future → run the full workflow (Steps 2–7)
+   - Trip is in progress → Steps 2, then 5–7 (scoped to The Trip tasks); skip the feasibility loop (Step 3) and readiness (Step 4) — pacing and prep are moot once travel is underway
+   - Trip has fully passed → Steps 6 and 7, scoped to the Follow-up checklist (deadline-bound follow-ups — insurance-claim windows, equipment returns — still get reminders); when Follow-up wraps up, set that trip's `status: done` in the state file
 
-Only ask about what genuinely can't be inferred. Summarize what you found, then proceed with Steps 2–6 only where an update is needed:
+Only ask about what genuinely can't be inferred. Summarize what you found, then proceed with Steps 2–7 only where an update is needed:
 
 > "Looks like you're flying to Tokyo in September — solo trip, flights and hotel already in your plan. Found a new tour confirmation in your email that's not captured yet. Want me to add it and check what else is still ahead?"
 
@@ -68,6 +68,10 @@ Gather intake, then generate the baseline travel plan. Only ask for what can't b
 - **Pets** — coming along or staying home
 - **Budget** — the total trip budget, if the user has one in mind. Feeds the Spending Tracker's budget and remaining figures. If they don't have one, leave it unset (the tracker omits those rows until a budget is established).
 - **What's already booked** — use any context already loaded from connected tools; ask only for what isn't already known. Capture as free text (e.g. "flights booked, hotel sorted, nothing else yet")
+- **Interests + travel-style/pace** — what they enjoy (museums, outdoors, food, nightlife) and whether they prefer a packed schedule or a relaxed one. Infer if the user's message makes it clear; ask briefly if not.
+- **Must-do anchors** — anything they definitely want to see or do (unbooked wishes). Record these in the plan so discovery can dedup against them and feasibility treats them as fixed points that are never proposed for cutting.
+- **Nationality + passport validity** (international trips only) — needed for visa/entry assessment in the feasibility check and the readiness step. Check passport expiry if offered; flag if it falls within 6 months of the return date.
+- **Dietary needs + accessibility needs** — ask only when relevant (group with mixed needs, a traveler who mentioned a restriction). These filter discovery candidates and relax feasibility's pacing thresholds.
 
 Generate the plan from what you gathered and confirm it with the user before proceeding.
 
@@ -85,21 +89,45 @@ Every plan file ends with a `## Sync State` section, and every item carries an i
 
 If an itinerary app is connected, offer to export the plan there in addition to the markdown file (confirm before exporting).
 
+**Enrich the plan with the `activity-discovery` agent.** After the baseline exists, invoke the read-only `activity-discovery` agent: give it the plan file, the traveler's preference signals (interests, pace, party, dietary, accessibility, must-do anchors, budget), destinations, dates, and the Sync State ledger. It returns a categorized set of candidates (Events / Activities / Dining) each tagged with cost, duration, indoor/outdoor, weather sensitivity, opening hours, venue type, and more. Present them to the user via one or more native `AskUserQuestion` (`multiSelect: true`) per `references/discovery-integration.md` — one prompt per category, sub-chunked by day when the list is large. Add the selected items to the plan via **gate 1** (one confirmation per batch). Fixed-date events become anchors; dining picks feed the feasibility meal-time math. Re-runnable on request ("find me more to do in X"). **For a trip already in progress, scope discovery to the remaining days** (or run it only when the user explicitly asks); **skip it for a passed trip** — broad pre-trip enrichment is moot once travel is underway, though the on-request re-run stays available. See `references/discovery-integration.md` for full guidance.
+
 See `references/itinerary-integration.md` for guidance, including the fallback if the prior markdown file cannot be located.
 
 ---
 
 ## Step 3 — Feasibility
 
-**Run this before any scheduling, task sync, or reminders — and before the user books anything.** It gates Steps 4–6: do not export to a calendar, sync tasks, or set reminders until the itinerary's pacing has been checked and the user has rebalanced or accepted the trade-offs. Verifying now, while rebalancing nights and base towns is still cheap, is the whole point — once bookings are confirmed the fixes are gone.
+**Run this before any scheduling, task sync, or reminders — and before the user books anything.** It gates Steps 5–7: do not export to a calendar, sync tasks, or set reminders until the itinerary's pacing and viability have been checked and the user has rebalanced or accepted the trade-offs. Verifying now, while rebalancing nights and base towns is still cheap, is the whole point — once bookings are confirmed the fixes are gone.
 
-Run automatically for any trip with inter-stop travel — road trips, and multi-destination trips by car, flight, train, or ferry; offer it (lighter) for single-base city breaks. Skip only when the trip is already in progress or has passed — pacing is moot then. Use the `feasibility-check` agent: give it the plan file and trip context; it returns travel-time and pacing findings (door-to-door, by mode) with confidence and sources. Present them grouped by day and let the user rebalance (move a night, change a base town, reorder stops, swap a leg's mode) or accept the trade-offs before proceeding.
+Run automatically for any trip with inter-stop travel — road trips, and multi-destination trips by car, flight, train, or ferry; offer it (lighter pacing pass but full non-pacing dimensions) for single-base city breaks. Skip only when the trip is already in progress or has passed — pacing is moot then.
 
-See `references/feasibility-integration.md` for full guidance.
+**The adversarial enrichment loop:**
+
+1. Invoke the `feasibility-check` agent on the enriched plan. Give it the plan file, trip context (party, pace preference, accessibility, must-do anchors, nationality, budget), and the full Spending Tracker. The agent checks pacing, weather, budget, safety, legality, seasonal route viability, and time-validity across all days. It returns findings with confidence and sources.
+2. Present findings to the user grouped by day. For each conflict the agent flags, offer at least one concrete rebalancing option. When the fix is a swap of an activity or dining pick, you may re-invoke the `activity-discovery` agent for that slot — pass it the day scope and the **constraints to preserve** (clean flags that must remain satisfied) so the swap can't reintroduce a problem the loop just cleared.
+3. After the user chooses (apply swap / rebalance manually / accept as-is), update the plan via gate 1 if anything changed, then re-invoke feasibility if the change affected other days.
+4. **Cap at 2 targeted re-discovery rounds** per conflict, then present a native `AskUserQuestion` with: *Apply suggested swap / Find different options / Accept as-is and proceed*. "Accept as-is" is always offered from the first round — findings are advisory, never blocking.
+5. Once the user has resolved or accepted all findings, proceed to Step 4.
+
+See `references/feasibility-integration.md` for full guidance on flag types, thresholds, the data contract with discovery, and the loop protocol.
 
 ---
 
-## Step 4 — Schedule
+## Step 4 — Readiness
+
+After the adversarial loop converges on a realistic, enriched plan, invoke the read-only `trip-readiness` agent to derive trip preparedness. Give it the plan file, trip context (trip type, party incl. kids' ages and minors, pets, **nationality/passport details**, dietary needs, accessibility needs), and the **feasibility digest** from Step 3 (especially its weather, safety, legality, route, and budget findings). The agent is the **sole emitter of prep actions**: it converts feasibility's constraints into the tasks and packing items the user must act on, so nothing is surfaced twice.
+
+The agent returns a categorized prep digest (documents/visa, health, insurance, packing/gear, money, connectivity, vehicle, pet, minors), each item with a lead time, a suggested reminder date, and a mapping to a `task-checklist.md` category. Route the digest:
+- **Step 6 (Tasks)** — prep tasks grouped by checklist category, with due dates where applicable
+- **Step 7 (Reminders)** — items with `suggestedReminderDate` (visa deadlines, vaccination start dates) offered as reminders via gate 2
+
+Skip this step for trips already in progress or fully passed. For a returning user asking "what do I still need to prepare or pack?", run it scoped to what's still ahead.
+
+See `references/readiness-integration.md` for full guidance on the feasibility→readiness contract, prep categories, lead-time defaults, and task-checklist mapping.
+
+---
+
+## Step 5 — Schedule
 
 Export the plan's dated items to a connected calendar, and import existing trip events back into the plan. Gates and Sync State recording per `references/sync-protocol.md`. If dates aren't known yet, skip and offer to revisit once the plan has dates set.
 
@@ -107,7 +135,7 @@ See `references/calendar-integration.md` for full guidance.
 
 ---
 
-## Step 5 — Tasks
+## Step 6 — Tasks
 
 If a task app is connected, import tasks from it — for returning users this includes syncing status changes for tasks already in the plan. For first-time users, task context was already loaded in Step 1. Then identify what's still ahead and not yet captured. Cross-reference the plan's tasks against:
 - What the user said is already done — exclude anything they've confirmed complete
@@ -119,7 +147,7 @@ See `references/task-integration.md` for guidance.
 
 ---
 
-## Step 6 — Reminders
+## Step 7 — Reminders
 
 With the full task list settled, offer to set reminders for outstanding time-sensitive tasks. For trips in the future or in progress, scope to tasks still ahead (e.g. upcoming check-ins, outstanding bookings) — not pre-departure prep that has already passed. For trips that have fully passed, scope to deadline-bound Follow-up tasks (e.g. insurance-claim windows, equipment-return dates). If more than one reminder capability is connected, ask the user which to use — don't choose for them; if only one is available, use it; if none, note it in the plan. See `references/reminder-integration.md`. Confirm the reminders before setting them — present them in **one native `AskUserQuestion`** and set only what the user selects, making explicit what will be created and in which app (gate 2 — see `references/sync-protocol.md`); record reminders set in a connected app in Sync State, and for any the user deselects at the prompt record an `export-declined` row (per `references/sync-protocol.md`) so they aren't re-offered every session; note in-session scheduled-task reminders in the plan body instead (see `references/reminder-integration.md`).
 
@@ -167,4 +195,15 @@ Use who's traveling and pet situation to scope suggestions:
 
 **Pets — coming along:**
 - Surface pet-specific tasks from `references/task-checklist.md` across Preparation and Pre-Departure
+
+**Interests + pace:**
+- Use interests to bias discovery candidates toward matching categories and to weight must-do anchors as fixed points
+- Use pace preference to scale feasibility's over-packed thresholds: a "relaxed" traveler hits over-packed sooner; a "packed schedule" traveler tolerates more per day
+
+**Accessibility:**
+- Add accessibility buffer to feasibility pacing; filter inaccessible discovery candidates
+- Add accessible transport and lodging checks to tasks where relevant
+
+**Dietary needs:**
+- Filter dining discovery to compatible venues; flag incompatible options rather than silently omitting them
 

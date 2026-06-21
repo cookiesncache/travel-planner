@@ -6,7 +6,7 @@ Set reminders for time-sensitive prep tasks (e.g. visa application, flight check
 
 Check which of the following are available in the current session:
 
-- **Calendar** — create a reminder alert (a calendar event) on the relevant date. This is the one calendar write allowed outside Step 4 itinerary export — see the Step 6 exception in `calendar-integration.md`.
+- **Calendar** — create a reminder alert (a calendar event) on the relevant date. This is the one calendar write allowed outside Step 5 itinerary export — see the Step 7 exception in `calendar-integration.md`.
 - **Task app** — create a task with a due date in the connected task app
 - **Scheduled-task** — the Claude Cowork scheduled task capability; schedules a timed reminder within the session, not a connected app. Check whether scheduled-task tools are available before attempting to use them. This capability is not always present.
 

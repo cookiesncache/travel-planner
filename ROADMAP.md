@@ -24,7 +24,7 @@ The sync-back check hook is prompt-based and relies on a few runtime behaviors w
 The hook prompts are LLM-evaluated, so their *logic* needs scenario testing, not just registration testing. Run each scenario below by feeding the hook's prompt text plus a short synthetic transcript to a model (or spot-check during `claude --debug`) and confirm the decision. **Every case must resolve to exactly one decision — a hook that returns "insufficient evidence" or any non-answer is a failure by itself.** These cases each pin a behavior a real session broke.
 
 **Stop hook (sync-back check):**
-- [ ] **S1 — plugin meta-session** (a dev/review/support chat that discusses plan files like `tokyo-itinerary.md` but makes no connector write) → **approve**. *(Regression: this exact case returned "insufficient evidence" before the activation/decision fix.)*
+- [x] **S1 — plugin meta-session** (a dev/review/support chat that discusses plan files like `tokyo-itinerary.md` but makes no connector write) → **approve**. *(Regression: this exact case returned "insufficient evidence" before the activation/decision fix.)* ✅ **Validated live 2026-06-20** on a roadmap/verification session — approved correctly, but the rationale drifted into self-reference because the transcript quoted the hook's own prompt verbatim; condition 1 hardened to treat quoting/testing/verifying the hook as discussion (`hooks/hooks.json`).
 - [ ] **S2 — unrelated non-travel session** → **approve**
 - [ ] **S3 — connector write made and recorded** in `## Sync State` → **approve**
 - [ ] **S4 — partial write**: exported, plan *body* updated, but Sync State rows omitted → **block** *(the P0-1 case the temporal proxy used to wave through)*
@@ -80,7 +80,7 @@ The first-time flow surfaces email confirmations *before* the plan file is creat
 `sync-protocol.md` state file holds one `active_trip` and "starting a new trip overwrites it." A second concurrent trip destroys the first's pointer, status, and connector choices, and nothing instructs scanning the project for other `*-itinerary.md` files — yet the README sells multi-trip return use. ✅ **fixed:** the state file is now a `trips` list with an `active_trip` pointer (new trips append, never overwrite); Step 1 resolves ambiguity from the list and scans the project for `*-itinerary.md` before declaring nothing found.
 
 **P1-3 · Calendar reminders are required and forbidden at once** *(gap)*
-`reminder-integration.md` says create a calendar reminder alert for "visa application"; `calendar-integration.md` forbids calendar events for prep reminders, naming "apply for visa" verbatim. A calendar-only user at Step 5 gets contradictory instructions and may refuse or hedge. ✅ **fixed:** `calendar-integration.md`'s whitelist/ban is now scoped to Step 4 itinerary export, with an explicit Step 6 exception allowing a user-confirmed `rm`-type reminder alert as a calendar event when calendar is the chosen reminder capability. Also addressed the related preference-forcing problem: when more than one reminder-capable connector is connected, the workflow now **asks the user which to use for reminders** instead of picking a default (`reminder-integration.md` "Choosing the capability", `SKILL.md` Step 6, `capabilities.md`), recording the choice in the state file.
+`reminder-integration.md` says create a calendar reminder alert for "visa application"; `calendar-integration.md` forbids calendar events for prep reminders, naming "apply for visa" verbatim. A calendar-only user at the reminders step gets contradictory instructions and may refuse or hedge. ✅ **fixed:** `calendar-integration.md`'s whitelist/ban is now scoped to Step 5 itinerary export, with an explicit Step 7 exception allowing a user-confirmed `rm`-type reminder alert as a calendar event when calendar is the chosen reminder capability. Also addressed the related preference-forcing problem: when more than one reminder-capable connector is connected, the workflow now **asks the user which to use for reminders** instead of picking a default (`reminder-integration.md` "Choosing the capability", `SKILL.md` Step 7, `capabilities.md`), recording the choice in the state file. *(Step numbers updated 2026-06-20 for the new Step 4 Readiness: itinerary export→5, calendar-reminder exception→7, reminders→7.)*
 
 **P1-4 · Sync State `pending` status has no lifecycle** *(gap)*
 `sync-protocol.md` defines and exemplifies `pending` but no recording rule ever produces or clears it, so deferred or mid-batch-failed exports have no path — and the Stop hook's "no approved changes left unwritten" can block with no rule to satisfy. ✅ **fixed:** added a Pending recording rule to `sync-protocol.md` (write `pending` on deferral/failure, clear to `synced` on successful export, and a cross-session pending row must be re-confirmed before export).
@@ -89,7 +89,7 @@ The first-time flow surfaces email confirmations *before* the plan file is creat
 A session-capability reminder isn't an app, but Sync State requires a human app name. ✅ **fixed:** in-session scheduled-task reminders are now explicitly **exempt from the Sync State ledger** — noted in the plan body instead; only reminders set in a connected app (calendar/task app) get an `rm` row (`reminder-integration.md`, `sync-protocol.md` Recording rules, `SKILL.md` Step 5). Residual (accepted): `create_scheduled_task` still matches the export-gate verb pattern, so it draws a native `ask` prompt — benign under the v0.7.2 ask-gate (the user confirms, and Step 5 confirms each reminder anyway). Suppress later with a gate fast-path for in-session capability tools if the extra prompt proves annoying.
 
 **P1-6 · Post-trip route skips reminders** *(gap)*
-The returning-user route sends a passed trip to Step 4 only; deadline-bound Follow-up tasks (insurance claims, rental returns) never get reminder offers. ✅ **fixed:** the post-trip route now runs Steps 4 *and* 5 scoped to the Follow-up checklist, and Step 5 explicitly scopes passed trips to deadline-bound Follow-up tasks (`SKILL.md` Step 1 routing + Step 5).
+The returning-user route sends a passed trip to Step 4 only; deadline-bound Follow-up tasks (insurance claims, rental returns) never get reminder offers. ✅ **fixed:** the post-trip route now runs Steps 6 *and* 7 scoped to the Follow-up checklist, and Step 7 explicitly scopes passed trips to deadline-bound Follow-up tasks (`SKILL.md` Step 1 routing + Step 7). *(Step numbers updated 2026-06-20: Schedule→5, Tasks→6, Reminders→7 to accommodate new Step 4 Readiness.)*
 
 **P1-7 · Stop-hook blind spots: compaction and user veto** *(gap; merges two findings)* — ✅ fixed
 (a) No compaction guard — the gate fails closed on truncated history, but the Stop fast-path *approves* on the same blindness, ending a turn with unrecorded exports invisible. (b) Condition 3 lets the user veto recording, breaking the ledger invariant with no recovery path. ✅ **partly fixed:** compaction guard added to the Stop prompt (block-once + re-read instruction; the anti-loop rule prevents a second block). This work also fixed a related flaw caught while testing the hook live — **both hooks over-triggered their "active travel session" detection on mere discussion/reading/development of the plugin** (a plugin-dev or support session looked like a live trip), and the **Stop prompt could return a non-decision** ("insufficient evidence in transcript") instead of approve/block. Both hooks now lead with "did a real connector write of trip data actually happen this session," explicitly exclude discussing/developing/supporting the plugin, and the Stop prompt is forced to resolve to exactly one decision with a default-approve on residual doubt. ✅ **now fully fixed:** a recording-veto leaves a minimal `untracked` Sync State row (new status; item + connector + remote ID, no Spending Tracker row, no day-by-day detail) — it honors "don't track it in my plan" while giving reconciliation the remote ID it needs so the connector item isn't re-surfaced as new next session.
@@ -159,7 +159,7 @@ From a field user story (`USER_STORY_travel-planner-feasibility-check.md`): a 9-
 On a draft itinerary, estimate per-leg **travel time by mode** (drive/flight/train/ferry — door-to-door, so a short flight still counts its airport + transfer overhead), per-stop time, and **meals as first-class time costs** (detour to/from each eatery measured against the through-route + a dining-duration block by venue type), then flag: over-packed travel days; **meal-inclusive over-packed days** that a travel-only model missed; "sightseeing" days that are really transit; rushed or under-used stops; geographically inconsistent lodging / departure-day backtracks; and **hard-deadline misses** (lodging check-in cutoffs, timed reservations) tested against the meal-inclusive timeline. Every finding carries a confidence level + sources and at least one concrete rebalancing option, framed as still-cheap-to-change. *(2026-06-14: generalized drive→all modes; meals + hard-deadline checks added.)*
 
 ### Where it runs
-Its own **Step 3**, after the itinerary is drafted (Step 2) and before Steps 4–6 (scheduling, task sync, reminders) generate booking-type commitments — never only after bookings are confirmed. (Originally shipped as a sub-paragraph of Step 2, which caused real runs to order it *last*, after task sync and calendar export; promoted to a first-class gating step to fix the ordering.) Auto-run for any trip with inter-stop travel — road trips, and multi-destination trips by car, flight, train, or ferry; offer it (lighter: intra-day/transfer feasibility) for single-base city breaks. For a returning user whose trip is already booked, still run it but frame findings as *manage-only* — and note that pre-booking is the right time.
+Its own **Step 3**, after the itinerary is drafted (Step 2) and before Steps 5–7 (scheduling, task sync, reminders) generate booking-type commitments — never only after bookings are confirmed. (Originally shipped as a sub-paragraph of Step 2, which caused real runs to order it *last*, after task sync and calendar export; promoted to a first-class gating step to fix the ordering.) Auto-run for any trip with inter-stop travel — road trips, and multi-destination trips by car, flight, train, or ferry; offer it (lighter: intra-day/transfer feasibility) for single-base city breaks. For a returning user whose trip is already booked, still run it but frame findings as *manage-only* — and note that pre-booking is the right time.
 
 ### Data source (pivotal constraint — verified this session)
 There is **no maps/routing/directions connector** available, and the only distance-ish tool (Uber `get_estimates_between_two_locations_claude`) is unusable here — immediate-ride-only, refuses future dates, returns a booking widget. So estimates come from **WebSearch/WebFetch** (typical travel times by mode — drive/train/flight/ferry, with citations) — preferred, and it satisfies the "sources + confidence" criterion — falling back to model geographic/transport knowledge flagged **low confidence** when search is unavailable or inconclusive. If a routing connector is added later, the agent should prefer it.
@@ -184,7 +184,7 @@ Heavy travel day > ~5 h door-to-door; effectively-transit > ~7 h (a single fligh
 ### Changes required
 - ✅ Added `agents/feasibility-check.md` — read-only agent (Read/Grep/Glob/WebSearch/WebFetch), inputs, output schema, WebSearch-with-citations + low-confidence fallback. *(Flat `agents/<name>.md` — that is the auto-discovered convention; a nested `agents/<name>/AGENT.md` would NOT load.)*
 - ✅ Added `references/feasibility-integration.md` — leg definition, flag types, thresholds, rebalancing patterns, manage-vs-fix framing.
-- ✅ `SKILL.md` — its own **Step 3** gating Steps 4–6 (trip-type gated; skipped for in-progress/passed trips; agent hand-off; resolve or accept findings before proceeding). Schedule/Tasks/Reminders renumbered to Steps 4/5/6.
+- ✅ `SKILL.md` — its own **Step 3** gating Steps 5–7 (trip-type gated; skipped for in-progress/passed trips; agent hand-off; resolve or accept findings before proceeding). Schedule/Tasks/Reminders renumbered to Steps 5/6/7 to accommodate new Step 4 Readiness.
 - ✅ `references/task-checklist.md` — folded the check into "Finalize daily itinerary," ahead of Preparation booking tasks.
 - ✅ README — pre-booking feasibility note.
 
@@ -197,7 +197,7 @@ Validated live (WebSearch) against a pre-booking draft of the California trip (`
 
 ---
 
-## Activity & Dining Discovery Agent *(feature)*
+## Activity & Dining Discovery Agent + Adversarial Feasibility Loop + Readiness Agent — ✅ implemented
 
 A read-only agent that, given the trip's destinations, dates, and the traveler's preferences/context, searches **broadly** for events, activities, and dining and surfaces them for the user to pick from — turning a thin baseline itinerary into a rich one without Claude guessing what the user wants.
 
@@ -210,10 +210,10 @@ Reviews the plan's preference signals — trip type, who's traveling (solo/coupl
 Surfacing is deliberately **broad** — a wide net across categories and price points. Each candidate carries name, type, when/where, a one-line why-it-fits, rough cost, and a source + confidence. The agent is **read-only**: it returns candidates as data and never writes the plan or books.
 
 ### Surfacing & selection (native multi-select)
-The main thread presents the candidates back as **one or more native multi-select prompts** (AskUserQuestion, `multiSelect: true`) — e.g. one per category (Events / Activities / Dining) or per day — so the user ticks exactly what they want. Selected items are added to the itinerary (gate 1), placed on appropriate days, and flow downstream: **dining picks feed the Step 3 feasibility check's meal-time math, dated events become fixed anchors the feasibility check respects**, and reservation-worthy picks become tasks (Step 5).
+The main thread presents the candidates back as **one or more native multi-select prompts** (AskUserQuestion, `multiSelect: true`) — e.g. one per category (Events / Activities / Dining) or per day — so the user ticks exactly what they want. Selected items are added to the itinerary (gate 1), placed on appropriate days, and flow downstream: **dining picks feed the Step 3 feasibility check's meal-time math, dated events become fixed anchors the feasibility check respects**, and reservation-worthy picks become tasks (Step 6 — Tasks). Reservation booking tasks are plain Tasks, not Readiness items; Readiness owns preparedness (packing/visa/insurance/gear).
 
 ### Where it runs
-In **Step 2 (Itinerary)**, after the baseline plan exists and before **Step 3 (Feasibility)** — so the feasibility check sees the enriched plan (chosen activities + meal time + dated events), not a skeleton. Re-runnable on request ("find me more to do in X").
+In **Step 2 (Itinerary)**, after the baseline plan exists and before **Step 3 (Feasibility)** — so the feasibility check sees the enriched plan (chosen activities + meal time + dated events), not a skeleton. Re-runnable on request ("find me more to do in X"). Steps renumbered: Schedule→5, Tasks→6, Reminders→7 to accommodate new Step 4 (Readiness).
 
 ### Why an agent
 Broad, multi-category, date-bounded search is noisy; a dedicated agent absorbs it and returns a clean categorized candidate set — same pattern as Booking Intel and feasibility. Read-and-report (per the connector-writes-main-thread-only rule, P2-5), so no SubagentStop hook.
@@ -224,10 +224,18 @@ Broad, multi-category, date-bounded search is noisy; a dedicated agent absorbs i
 - Add `references/discovery-integration.md` — preference signals to use, category coverage, date-bounding for events, how candidates map to plan items/tasks, and the multi-select presentation pattern (how to chunk so the user isn't overwhelmed).
 - README + this ROADMAP.
 
-### Open questions
-- Chunking of the multi-selects (per-category vs per-day) to avoid overwhelming the user.
-- Dedup against items already in the plan and against `declined` Sync State rows.
-- Budget interplay — surface above-budget options flagged, or omit them?
+### Open questions — ✅ all resolved
+- **Chunking:** one prompt per category (Events/Activities/Dining); sub-chunk by day when large. See `references/discovery-integration.md`.
+- **Dedup:** name/vendor + dates vs plan items and `declined`/`untracked`/`cancelled`/`orphaned` rows; deselection ≠ decline (no ledger row). See `references/discovery-integration.md`.
+- **Budget:** surface above-budget options flagged (`overBudgetFlag: true`); never silently omit. Feasibility flags trip-level overruns. See `references/discovery-integration.md`.
+
+### What was built (2026-06-20)
+- **`agents/activity-discovery.md`** — read-only; broad categorized candidate search; full per-candidate schema incl. opening hours, time-validity, suitability, availability urgency, gear/permit tags; dedup + re-run freshness; targeted re-discovery mode for the loop.
+- **`agents/trip-readiness.md`** — read-only; post-loop prep derivation; sole-emitter-of-prep-actions contract; maps each feasibility constraint to a prep task with lead time + reminder date.
+- **Expanded `agents/feasibility-check.md`** — adds `weather-risk`, `budget-risk`, `safety-risk`, `legality-risk`, `route-risk`; daylight/usable-daytime; time-validity; budget completeness; party-scaled pacing; constraints-not-prep contract; `color: red`.
+- **`references/discovery-integration.md`** + **`references/readiness-integration.md`** — full integration guidance for both new agents.
+- **`SKILL.md`** — Step 1 intake additions (interests/pace, must-do anchors, nationality, dietary/accessibility); Traveler Context expanded; Step 2 Discovery invocation; Step 3 adversarial loop (2-round cap, regression guard, advisory-not-blocking); new Step 4 Readiness; Schedule/Tasks/Reminders renumbered 5/6/7.
+- **Step-ref updates** in `feasibility-integration.md`, `calendar-integration.md`, `reminder-integration.md`, `sync-protocol.md`, `README.md`.
 
 ---
 
@@ -293,9 +301,6 @@ The v0.7.0 Sync State ledger resolves this for the common case: declining a surf
 
 ---
 
-## Integration file review *(low priority)*
+## Integration file review — ✅ closed
 
-The v0.7.x review above covered cross-file consistency and connector behavior (P1-3, P2-3, P2-4 in particular). This item is now narrowed to the trip-type *scoping* question the review did not target: the city-break Admin items (what to apply when a city break is also international).
-
-### Changes likely required
-- `references/task-checklist.md` city-break row: clarify which Admin items apply when a city break is also international, rather than leaving "unless international" unexplained
+The v0.7.x review above covered cross-file consistency and connector behavior (P1-3, P2-3, P2-4 in particular). The remaining scoping question — which Admin items apply when a city break is also international — is resolved: **international takes precedence**. A city break that crosses a border gets the full Admin section (passport, visa, insurance, health entry), same as any international trip; trip type doesn't reduce the Admin requirement. Updated `references/task-checklist.md` city-break row (2026-06-20).

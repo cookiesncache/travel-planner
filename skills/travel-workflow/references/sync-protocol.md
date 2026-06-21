@@ -26,7 +26,7 @@ How to cooperate:
 
 The Stop hook only sees MCP tool calls, and gate 2 is prose-driven regardless — so writes made another way (controlling an app's screen, a browser, or a shell) follow the same confirm-first rule in full.
 
-**Connector writes happen in the main thread only.** Subagents are read-only with respect to connectors: they read the plan, search, and report, but never call a connector write tool — the main thread performs every export and records it. This is deliberate — the Stop hook operates on the main agent's turn and gate-2 confirmation happens in the main thread, so a connector write made inside a subagent would bypass both. A discovery agent that surfaces bookings or tasks (e.g. `booking-intel`) returns them as data; the main thread does the writing and the recording.
+**Connector writes happen in the main thread only.** Subagents are read-only with respect to connectors: they read the plan, search, and report, but never call a connector write tool — the main thread performs every export and records it. This is deliberate — the Stop hook operates on the main agent's turn and gate-2 confirmation happens in the main thread, so a connector write made inside a subagent would bypass both. A discovery agent that surfaces bookings or tasks (e.g. `booking-intel`, `activity-discovery`, `trip-readiness`) returns them as data; the main thread does the writing and the recording.
 
 ## Sync State section
 

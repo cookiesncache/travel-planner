@@ -22,7 +22,11 @@ Works for any trip type:
 
 Adapts based on who's traveling, whether you have kids, and what's happening with your pets.
 
-🧭 For road trips and multi-stop trips, it runs a **feasibility check before you book** — estimating travel times (driving, flights, trains, ferries, door-to-door) *and the time meals actually eat* (the detour plus sitting down), then flagging over-packed days, days that would miss a check-in cutoff or dinner reservation, "sightseeing" days that are really transit, and base towns that don't match the day's plan — with sources and concrete rebalancing options. Catch the unrealistic days while moving a night is still free, not after the hotels are paid for.
+🎯 Tell Claude what you enjoy — outdoor adventures, local food scenes, festivals, museums — and it'll search broadly for **events, activities, and dining** matched to your destinations, dates, and who's travelling. You pick from a native checklist; nothing is added unless you select it. Chosen dining feeds the pacing math; fixed-date events become anchors the rest of the plan works around.
+
+🧭 Before you book, it runs a **feasibility and viability check** — travel times (driving, flights, trains, ferries, door-to-door) *and the time meals actually eat*, over-packed days, "sightseeing" days that are really transit, base towns that don't match the day's plan. It also checks **weather** (forecast or historical averages), **budget** (estimated trip total vs your budget), **safety** (advisories and conditions that bear on the itinerary), **legality** (visa and permit requirements for your nationality), and **seasonal route viability** (a pass that's closed in winter isn't just slow — it's impassable). Findings come with sources and concrete rebalancing options. If weather or budget flags an activity you picked, it can find alternatives — indoor, cheaper, or shorter — so you converge on a plan that's *enriched but realistic*, before the hotels are paid for.
+
+🗂️ Once the itinerary is settled, it derives your **trip preparedness checklist** — visa applications, vaccinations, insurance, gear for the activities you chose, packing for the weather — with lead times and reminder dates, routed into your task app and calendar.
 
 ✨ Connectors are detected automatically at the start of each session — add one anytime and the plugin will start using it on your next trip. Switch apps by disconnecting the old one and connecting the new one; no reconfiguration needed.
 
