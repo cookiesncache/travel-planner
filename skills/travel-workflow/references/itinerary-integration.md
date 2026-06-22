@@ -40,6 +40,16 @@ The ID column uses the same item IDs as the plan body and the Sync State ledger 
 
 If an itinerary app or notes tool is connected (Wanderlog, Notion, Google Docs, etc.), offer to export the plan there in addition to the markdown file, matching the app's native structure where possible. Import any changes made in the app back into the plan (and update the markdown file accordingly). Gates and Sync State recording: see `sync-protocol.md`. If multiple itinerary apps are connected, ask the user which to sync to and record the choice in the state file.
 
+## Tasks in deliverables
+
+Do not embed an independently-editable task checklist in any itinerary deliverable (exported doc, Word file, PDF, shared note, etc.) when a task connector is connected. An embedded list is immediately a third copy with nothing keeping it in sync — it will drift (confirmed in real use: a dropped task stayed in the docx while seven newer tasks were missing from it, all while Todoist and the plan's `## Tasks` were current).
+
+- **Connector connected:** replace the checklist with a reference — e.g. *"Tasks live in your Todoist [Trip Name] project."* Never duplicate the list.
+- **No connector:** an inline task list in the deliverable is acceptable; the plan's `## Tasks` is the only copy, so the deliverable and the source of truth are the same artifact.
+- **User explicitly requests a printable checklist:** render it, but label it clearly as a point-in-time snapshot — e.g. *"Task snapshot — [date]. Authoritative list is in [app]."* Regenerate it from the current plan+connector state on demand; never hand-edit it after generation.
+
+---
+
 ## Updating
 
 Gate 1 applies to Claude-initiated updates (see `sync-protocol.md`). For returning users, update only what's changed — do not regenerate the full plan unless asked.

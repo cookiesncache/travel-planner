@@ -1,6 +1,8 @@
 # Task App Integration
 
-Tasks always live in the travel plan (the source of truth) — with or without a connected task app. If a task app is connected, keep the plan and task app in sync: export plan tasks to the app, import any app tasks not yet in the plan. Gates and Sync State recording: see `sync-protocol.md`. If no task app is connected, tasks stay in the plan only.
+**Source of truth:** tasks always live in the travel plan (`## Tasks` + `## Sync State`). The connected task app is the live mirror — never the source of truth. Any other appearance of the task list (an exported doc, a shared note, a printed checklist) is a generated, labeled snapshot, not a separately-maintained copy. See `itinerary-integration.md` → "Tasks in deliverables" for the rule on what to embed in deliverables.
+
+If a task app is connected, keep the plan and task app in sync: export plan tasks to the app, import any app tasks not yet in the plan. If no task app is connected, tasks stay in the plan only. Gates and Sync State recording: see `sync-protocol.md`.
 
 ## Finding the Right App
 
@@ -15,6 +17,8 @@ Search for an existing project matching the trip (by destination name, "trip", "
 ## Auditing Tasks
 
 **Step 1 — Import first.** Before auditing, complete the import from the task app into the plan: pull any tasks that exist in the app but aren't yet in the plan, preserving their completion status (completed tasks are added as closed, not open). **Fetch both open *and* completed/closed tasks** — use the app's completed-task listing alongside the open list, so a task finished in the app isn't mistaken for one that was deleted (a closed task missing from an open-only read must never be marked `orphaned` — see `sync-protocol.md`). A task whose remote ID already appears in the plan's Sync State is already imported — only its status may need reconciling. Also sync status changes for tasks already in both places — if a task is open in the plan but completed in the app, update the plan's status to match. Batch all status changes into a single summary and ask for one confirmation before writing (gate 1 — see `sync-protocol.md`); record imports and status changes in Sync State as part of the same write. This must be finished before gap analysis begins.
+
+After the import completes, **check for divergence**: tasks in the plan's `## Tasks` with no matching `synced` row in Sync State (never exported), and tasks in the connector project with no matching plan row (imported above, or still missing). Surface any divergence in a brief summary before the audit — e.g. *"3 plan tasks were never exported to Todoist; 1 Todoist task has no plan entry."* This is the staleness signal; the user decides whether to export the missing rows now or leave them.
 
 **Step 2 — Audit.** With the plan now reflecting all known tasks, map them against `task-checklist.md`. For post-trip sessions, scope the audit to the Follow-up category only. Identify which categories have no coverage and present gaps clearly grouped by category. Explain why each gap matters in the context of the specific trip type — don't just list missing tasks.
 
