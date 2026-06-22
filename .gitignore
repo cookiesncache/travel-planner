@@ -1,0 +1,13 @@
+# Python (generate_spending_xlsx.py)
+__pycache__/
+*.pyc
+
+# Generated spending spreadsheets (created in user project dirs, not the plugin repo)
+*-spending.xlsx
+*-spending.csv
+
+# Plugin local state files
+*.local.md
+
+# Syncthing conflict artifacts
+*.sync-conflict-*
