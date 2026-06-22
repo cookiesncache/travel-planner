@@ -76,7 +76,7 @@ A leg is feasible only if its route is open for the dates: a seasonal pass, an o
 
 ## Budget
 
-Estimate the trip total and compare to the Spending Tracker budget (a **total-for-party** figure; discovery costs are already per-party). Count the easily-missed line items, not just the headline four: **lodging + activities + dining + transport + fuel/tolls/parking + park/entrance fees + local transit + baggage fees + any readiness-item costs the plan notes (visa/insurance)**. A trip- or day-level overrun → `budget-risk`; the cheap fix is a cheaper activity/dining swap (re-run discovery) or dropping a paid stop.
+Estimate the trip total and compare to the spending file's Trip budget (a **total-for-party** figure; discovery costs are already per-party). Count the easily-missed line items, not just the headline four: **lodging + activities + dining + transport + fuel/tolls/parking + park/entrance fees + local transit + baggage fees + any readiness-item costs the plan notes (visa/insurance)**. A trip- or day-level overrun → `budget-risk`; the cheap fix is a cheaper activity/dining swap (re-run discovery) or dropping a paid stop.
 
 ## Safety and legality (constraints only)
 

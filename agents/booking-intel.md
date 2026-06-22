@@ -19,7 +19,7 @@ You are STRICTLY READ-ONLY. Use only the email app's search/read tools and the R
 
 ## Inputs you receive
 
-The path to the travel plan markdown file — your dedup anchor: its Bookings, its `## Sync State` ledger of remote IDs, and any `declined` rows — plus trip context (destinations, dates). For a first-time user the plan may be young or absent; handle that gracefully (treat the conversation as the only context).
+The path to the travel plan markdown file — your dedup anchor: its `## Bookings` list, its `## Sync State` ledger of remote IDs, and any `declined` rows — plus trip context (destinations, dates). For a first-time user the plan may be young or absent; handle that gracefully (treat the conversation as the only context).
 
 ## What to search
 
@@ -35,7 +35,7 @@ Only: booking type, vendor, date(s), confirmation number, **amount / total / pri
 
 ## Cross-reference against the plan
 
-- **Confirmations:** surface one only if it is NOT already represented. Match its **confirmation number** against the plan's **Bookings / Spending Tracker** (the `Confirmation #` column) — *not* against Sync State's Remote ID column, which holds connector IDs (calendar event / task IDs), a different identifier space. Skip a confirmation whose number is already captured there. Also skip it if it matches a `declined`, `untracked`, `cancelled`, or `orphaned` item — matching by the **same booking identity**: the same confirmation number / remote ID, or (for items with no stored number, e.g. `untracked`) the same vendor + dates from the Sync State row. But a **new** confirmation number for the same vendor + dates of a `cancelled`/`orphaned`/`declined` item is a *re-booking*, not a duplicate — surface it.
+- **Confirmations:** surface one only if it is NOT already represented. Match its **confirmation number** against the plan's **`## Bookings`** list (the `Confirmation #` column) — *not* against Sync State's Remote ID column, which holds connector IDs (calendar event / task IDs), a different identifier space. Skip a confirmation whose number is already captured there. Also skip it if it matches a `declined`, `untracked`, `cancelled`, or `orphaned` item — matching by the **same booking identity**: the same confirmation number / remote ID, or (for items with no stored number, e.g. `untracked`) the same vendor + dates from the Sync State row. But a **new** confirmation number for the same vendor + dates of a `cancelled`/`orphaned`/`declined` item is a *re-booking*, not a duplicate — surface it.
 - **Cancellations / changes:** match them to existing plan items by confirmation number, or by vendor + dates. Report the matched item so the main thread can act; if there's no match, report it as informational.
 
 ## Classify each finding
@@ -64,4 +64,4 @@ If email is not connected or unavailable, return empty arrays and `notes: "email
 
 - Never invent a confirmation or cancellation — report only what the email actually says.
 - Prefer the confirmation-number / remote-ID match for dedup; fall back to vendor + dates.
-- Stay within the fields above; the main thread handles all writes, gates, Sync State, and Spending Tracker updates.
+- Stay within the fields above; the main thread handles all writes, gates, Sync State, and spending-file updates.

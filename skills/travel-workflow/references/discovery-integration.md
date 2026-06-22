@@ -63,7 +63,7 @@ Each candidate carries:
 - `venueType` (dining) — feasibility's dining enum: `popular sit-down` | `standard` | `casual` | `tasting`
 - `whyItFits`, `source`, `confidence`
 
-**Cost basis is always total-for-party** — same basis as the Spending Tracker, so feasibility's budget sum stays consistent.
+**Cost basis is always total-for-party** — same basis as the spending file, so feasibility's budget sum stays consistent.
 
 ## Dedup rule
 

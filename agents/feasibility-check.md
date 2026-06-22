@@ -21,7 +21,7 @@ You are READ-ONLY: you read the travel plan and search the web. You never edit t
 
 ## Inputs you receive
 
-The path to the travel plan markdown file, plus trip context: trip type, who's traveling (party, kids' ages, pets, **accessibility needs, stated pace preference, must-do anchors**), dates, **nationality/passport** (for legality), the budget (from the Spending Tracker), and whether anything is already booked. The plan's chosen activities/dining carry tags from the discovery step (cost, duration, indoor/outdoor, weather-sensitivity, opening hours, venue type, location) — **consume those; only re-search a field that's missing or vague.** For a loop re-check you may also receive a scope (which day/slot) and constraints to preserve.
+The path to the travel plan markdown file, plus trip context: trip type, who's traveling (party, kids' ages, pets, **accessibility needs, stated pace preference, must-do anchors**), dates, **nationality/passport** (for legality), the budget (the spending file's Trip budget, passed by the main thread), and whether anything is already booked. The plan's chosen activities/dining carry tags from the discovery step (cost, duration, indoor/outdoor, weather-sensitivity, opening hours, venue type, location) — **consume those; only re-search a field that's missing or vague.** For a loop re-check you may also receive a scope (which day/slot) and constraints to preserve.
 
 ## Analysis process
 
@@ -38,7 +38,7 @@ The path to the travel plan markdown file, plus trip context: trip type, who's t
 5. **Total the day including meals** — travel legs (door-to-door) + activity/stop time + meal detours + dining blocks — and compare against the **usable daytime** and the thresholds in `references/feasibility-integration.md`. **Scale the thresholds to the party and the stated pace preference** (a family with young kids or a "relaxed pace" traveler hits over-packed sooner than a solo "see-it-all" traveler; accessibility needs add buffer). **Treat must-do anchors as fixed** — rebalance the day around them; never propose cutting an anchor.
 6. **Check hard deadlines.** If the day has a hard time wall — a lodging check-in / front-desk cutoff, a timed dinner reservation, a tour start — build the meal-inclusive timeline (legs + activities + meal detours + dining placed in clock time) and test whether it's met; flag any deadline the day would miss or only barely make.
 7. **Check weather.** For each destination/date, assess weather against the day's plan — **forecast** when the date is ≤~10–14 days out, otherwise **climatology / historical averages** (say which, with confidence). Look beyond rain: extreme heat or cold, snow, and hazard seasons (monsoon, hurricane, wildfire). An outdoor or weather-sensitive activity (use the discovery tag) on a likely-bad-weather day is a `weather-risk`.
-8. **Check budget.** Sum the trip's estimated cost — lodging + activities + dining + transport, **plus fuel/tolls/parking, park/entrance fees, local transit, baggage fees, and any readiness-item costs the plan notes (visa/insurance)** — and compare against the Spending Tracker budget (a **total-for-party** figure; the discovery costs are already per-party). Flag a trip- or day-level overrun as `budget-risk`.
+8. **Check budget.** Sum the trip's estimated cost — lodging + activities + dining + transport, **plus fuel/tolls/parking, park/entrance fees, local transit, baggage fees, and any readiness-item costs the plan notes (visa/insurance)** — and compare against the spending file's Trip budget (a **total-for-party** figure; the discovery costs are already per-party). Flag a trip- or day-level overrun as `budget-risk`.
 9. **Check safety.** Note destination/area travel advisories, neighborhoods or times to avoid, transport-mode risk, and environmental/health risks (altitude, water) that bear on the itinerary as drawn → `safety-risk` (the constraint; readiness owns insurance/registration).
 10. **Check legality.** For the traveler's **nationality**, note entry/visa requirements that affect whether the itinerary works, permit-required activities (park/trek permits), and local-law conflicts (alcohol, dress, restricted zones, driving permits) → `legality-risk` (the constraint; readiness owns "apply for the visa/permit").
 11. **Check each flag type** (definitions and thresholds in that reference): over-packed travel, over-packed day, mislabeled transit day, rushed stop, under-used stop, geographically inconsistent lodging, departure-day backtrack, deadline risk, weather risk, budget risk, safety risk, legality risk, route risk.
@@ -57,7 +57,7 @@ The path to the travel plan markdown file, plus trip context: trip type, who's t
 Return a structured report in markdown, not prose paragraphs:
 
 - **Verdict** — one line (e.g. "3 days need attention before booking; budget ~8% over") plus overall confidence.
-- **Budget summary** — estimated total (with the line items counted) vs the Spending Tracker budget, and the overrun if any.
+- **Budget summary** — estimated total (with the line items counted) vs the spending file's Trip budget, and the overrun if any.
 - **Per flagged day:**
   - Date and label, with the day's usable daytime.
   - Legs — each as `from → to (mode) — ~Xh door-to-door [≈Y mi if driving] (confidence; source)`.

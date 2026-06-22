@@ -18,7 +18,7 @@ You are STRICTLY READ-ONLY. Use only WebSearch/WebFetch and the Read/Grep/Glob t
 
 ## Inputs you receive
 
-The path to the travel plan markdown file, plus trip context: destinations, dates, and the traveler's preference signals (party — solo/couple/group/family with kids' ages; pets; **interests; travel-style/pace; dietary needs; accessibility needs; must-do anchors**; budget). Read the plan's day-by-day section, its Bookings / Spending Tracker, and its `## Sync State` ledger (your dedup anchor). For a young or absent plan, lean on the conversation context. If a re-discovery call passes constraints and a scope, honor them.
+The path to the travel plan markdown file, plus trip context: destinations, dates, and the traveler's preference signals (party — solo/couple/group/family with kids' ages; pets; **interests; travel-style/pace; dietary needs; accessibility needs; must-do anchors**; budget). Read the plan's day-by-day section, its `## Bookings` list, and its `## Sync State` ledger (your dedup anchor). For a young or absent plan, lean on the conversation context. If a re-discovery call passes constraints and a scope, honor them.
 
 ## What to search
 
@@ -41,7 +41,7 @@ Pin these fields so the main thread can place the item and the feasibility check
 - `where` — a **routable** location (address or place name + city), not "downtown" — feasibility computes door-to-door legs from this
 - `areaCluster` — the sub-area within the destination (neighborhood / town), so the main thread can place it on a day that doesn't trigger a geo-inconsistent dead-leg
 - `durationMin` — typical time on site
-- `cost` — `{ basis: "total-for-party", amount, priceTier, overBudgetFlag }` — **per the whole party**, to match the Spending Tracker (which is a total); flag `overBudgetFlag: true` when it exceeds the remaining/typical budget but still surface it
+- `cost` — `{ basis: "total-for-party", amount, priceTier, overBudgetFlag }` — **per the whole party**, to match the spending file (which totals for the party); flag `overBudgetFlag: true` when it exceeds the remaining/typical budget but still surface it
 - `indoorOutdoor`, `weatherSensitivity` — so a rain/heat day can be re-planned
 - `openingHours`, `closedDays`, `seasonalWindow` — time-validity, so the item isn't slotted on a day it's shut
 - `reservationNeeded` + `leadTimeDays`; `availabilityUrgency.booksOutLeadDays` — how far ahead it sells out (distinct from a same-day reservation)
@@ -86,4 +86,4 @@ If a category yields nothing trustworthy, return it empty and say why in `notes`
 - Never invent a venue, event, price, or opening time — report only what search supports, with a source; drop to low confidence (or omit) when you can't.
 - Every candidate carries `whyItFits`, a `source`, and a `confidence`.
 - Filter to the party and the stated constraints; surface above-budget options but flag them — don't silently hide or silently include them.
-- Stay within these fields; the main thread handles all selection, plan writes, gates, Sync State, and the Spending Tracker.
+- Stay within these fields; the main thread handles all selection, plan writes, gates, Sync State, and the spending file.

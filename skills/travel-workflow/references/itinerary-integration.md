@@ -9,32 +9,49 @@ Organize the plan by day. For each day include:
 - Activities and bookings with times where known
 - Any relevant notes (e.g. confirmation numbers, addresses)
 
-## Spending Tracker
+## Bookings
 
-Include a **Spending Tracker** section in the plan. Whenever a booking is captured to the plan (from email, user input, or a connector), add a row. Adding the row is part of the same plan write that captured the booking — it carries the same authorization, so no separate confirmation is needed beyond what already approved capturing the booking.
+The plan holds booking **identity** here — no amounts. This is the dedup anchor (email confirmations match its `Confirmation #` column), the Stop hook's check target, and what the agents read. The money — amounts, totals, budget — lives in the standalone spending file (see `## Spending` below and `spending-integration.md`).
 
-**Do not add a row for a booking that was not captured as confirmed** — e.g. a payment-rejected or declined confirmation (see `email-integration.md`). Those are flagged "needs attention" and never appear in the tracker.
+Whenever a booking is captured to the plan (from email, user input, or a connector), add a row. Adding the row is part of the same plan write that captured the booking — it carries the same authorization, so no separate confirmation is needed beyond what already approved capturing the booking. The same write also adds the booking's spending-file row and its Sync State row.
+
+**Do not add a row for a booking that was not captured as confirmed** — e.g. a payment-rejected or declined confirmation (see `email-integration.md`). Those are flagged "needs attention" and never appear in Bookings or the spending file.
 
 Format:
 
 ```markdown
-## Spending Tracker
+## Bookings
 
-| ID | Item | Amount | Confirmation # |
+| ID | Item | Confirmation # | Payment status |
 |---|---|---|---|
-| tyo-bk1 | Tokyo flight (JAL 123) | $450 | ABC123 |
-| tyo-bk2 | Hotel Shinjuku (3 nights) | $600 | XYZ789 |
-| | **Total spent** | **$1,050** | |
-| | **Trip budget** | **$3,000** | |
-| | **Remaining** | **$1,950** | |
+| tyo-bk1 | Tokyo flight (JAL 123) | ABC123 | prepaid |
+| tyo-bk2 | Hotel Shinjuku (3 nights) | XYZ789 | due-on-arrival |
+| tyo-bk3 | Sushi-making class | DEF456 | due-on-arrival |
 ```
 
-The ID column uses the same item IDs as the plan body and the Sync State ledger (see `sync-protocol.md`) — the tracker is the money view, Sync State is the sync view, joined by ID.
+(An unpriced booking like `tyo-bk3` — confirmed but no amount yet — still gets a row here; its Amount stays blank in the spending file until known.) The ID column uses the same item IDs as the plan body, the Sync State ledger (see `sync-protocol.md`), and the spending file (column A) — a three-way join. Bookings is the identity view, Sync State is the sync view, the spending file is the money view, all joined by ID.
 
-- **Amount known** — record it in the row.
-- **Amount unknown** (not in the confirmation, or imported from a connector that carries no price) — add the row with the Amount left blank and confirm the amount with the user. Until an amount is provided, exclude that row from the Total (do not count it as $0) and note that unpriced bookings exist, so Remaining is never silently wrong.
-- Recalculate Total (sum of known amounts only) and Remaining after every change.
-- The Trip budget comes from intake (Step 1). If no budget was set, omit the budget and remaining rows until one is established.
+## Spending
+
+A standalone spreadsheet — `<dest>-spending.xlsx`, generated with live formulas — owns the money. The plan keeps only a **one-line summary + pointer** here, never an editable money table. See `spending-integration.md` for the schema, generation, and recalc-validation.
+
+Format:
+
+```markdown
+## Spending
+
+Total spent **$1,050** of **$3,000** budget · **$1,950** remaining · **$600** still due in person.
+Full breakdown with live formulas: `tokyo-spending.xlsx`.
+*(1 unpriced booking not yet in the total.)*
+```
+
+- The summary is a **read-only echo** of the recalculated spending file — refresh it after every change; never hand-edit it to disagree with the file.
+- **Amount unknown** (not in the confirmation, or imported from a connector that carries no price) — the spending file leaves that Amount blank (excluded from the total, never counted as $0); append the "N unpriced bookings" note here so Remaining is never silently wrong.
+- **No budget set** (from intake, Step 1) — omit the budget and remaining figures until one is established.
+
+## Spending in deliverables
+
+Do not embed an independently-editable money table in any itinerary deliverable (exported doc, Word file, PDF, shared note) — it is instantly a second copy with nothing keeping it in sync, the same drift that hit the task checklist. Reference the spending file instead — e.g. *"Full spending breakdown: `tokyo-spending.xlsx`."* If the user explicitly wants a printable budget, render a clearly-labeled point-in-time snapshot (the `<dest>-spending.csv` export in `spending-integration.md`) — *"Spending snapshot — [date]. Live figures in `tokyo-spending.xlsx`."* — regenerated on demand, never hand-edited.
 
 ## Syncing to a connected itinerary app
 
