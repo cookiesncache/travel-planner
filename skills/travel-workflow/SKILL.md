@@ -66,7 +66,7 @@ Gather intake, then generate the baseline travel plan. Only ask for what can't b
 - **Trip type** — infer from destination and transport (e.g. "driving to the coast" → road trip, "flying to Tokyo" → international)
 - **Who's traveling** — solo, couple, group, family with kids (and ages if relevant)
 - **Pets** — coming along or staying home
-- **Budget** — the total trip budget, if the user has one in mind. Feeds the spending file's Trip budget and Remaining figures. If they don't have one, leave it unset (the spending file omits those figures until a budget is established).
+- **Budget + home currency** — the total trip budget, if the user has one in mind, and the **home currency** it's tracked in (infer from the user's home location or the currency they state the budget in; default to USD if unclear). Feeds the spending file's Trip budget, home currency, and Remaining figures. Bookings in other currencies are converted to the home currency there (native amounts kept). If they don't have a budget, leave it unset (the spending file omits those figures until one is established).
 - **What's already booked** — use any context already loaded from connected tools; ask only for what isn't already known. Capture as free text (e.g. "flights booked, hotel sorted, nothing else yet")
 - **Interests + travel-style/pace** — what they enjoy (museums, outdoors, food, nightlife) and whether they prefer a packed schedule or a relaxed one. Infer if the user's message makes it clear; ask briefly if not.
 - **Must-do anchors** — anything they definitely want to see or do (unbooked wishes). Record these in the plan so discovery can dedup against them and feasibility treats them as fixed points that are never proposed for cutting.
