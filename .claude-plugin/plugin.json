@@ -1,6 +1,6 @@
 {
   "name": "travel-planner",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Guides Claude through planning any trip end-to-end — road trips, flights, international travel, city breaks — using a 7-step workflow: activity & dining discovery, adversarial feasibility (pacing, weather, budget, safety, legality, seasonal routes), trip readiness (visa, packing, vaccinations, insurance), schedule, tasks, and reminders — all built around a connector-agnostic travel plan that syncs with your calendar, itinerary, and task apps.",
   "author": {
     "name": "cookiesncache"

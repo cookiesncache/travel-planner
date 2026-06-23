@@ -291,6 +291,8 @@ Explicit entry points as flat `commands/*.md` files alongside the auto-triggerin
 
 Each is thin: a `description` + `argument-hint`, `$ARGUMENTS` pass-through, and a hand-off to the right workflow entry point or agent — no logic duplicated from `SKILL.md`. Auto-discovered from `commands/` (no `plugin.json` change), same as the flat `agents/`. `:discover` surfaces options; `:enrich` adds *and* vets them in the adversarial loop.
 
+*Post-release review (v1.3.1, minimally-parallel 2-agent pass):* tightened `:status` (booked-vs-outstanding wording — `## Bookings` is confirmed-only — plus a missing-plan fallback), `:feasibility` (passes the spending-file **path** + budget value, matching the agent contract), and `:scan` (no-plan fallback). The rest verified accurate.
+
 ---
 
 ## Budgeting & Cost Splitting *(deferred — no quality connector available)*

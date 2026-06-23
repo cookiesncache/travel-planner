@@ -5,10 +5,10 @@ argument-hint: [optional: which trip]
 
 Show a **read-only snapshot** of the current trip — make no changes, write nothing, call no connector.
 
-Locate the plan via `.claude/travel-planner.local.md` (use `$ARGUMENTS` if it names a trip, otherwise `active_trip`). Read the plan and its spending file, then summarize at a glance:
+Locate the plan via `.claude/travel-planner.local.md` (use `$ARGUMENTS` if it names a trip, otherwise `active_trip`). If no state file exists, scan the project for a `*-itinerary.md` plan; if none is found, say so and stop. Read the plan and its spending file, then summarize at a glance:
 
 - destination(s) and dates, with days until departure (or "in progress" / "completed")
-- what's booked vs. still unbooked (from `## Bookings`)
+- what's booked (from `## Bookings`) vs. what's still outstanding (unbooked must-do anchors and open tasks in the plan)
 - budget — total spent / remaining / still due in person (from the spending file)
 - outstanding tasks and any reminders still ahead
 
