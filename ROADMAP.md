@@ -34,7 +34,9 @@ The PreToolUse **export-gate hook** (which returned `ask` so the harness showed 
 
 ---
 
-## v0.7.0 Pre-Release Verification
+## v0.7.0 Pre-Release Verification — ✅ complete (2026-06-23)
+
+> **Verified live by the maintainer.** All active (non-superseded) cases pass: the Stop hook registers at session start and fast-path-approves non-travel sessions, blocks-then-approves an unrecorded export without looping, and the S1–S6 decision cases resolve correctly; gate-2 `AskUserQuestion` confirmation works for single and batch writes. The export-gate (`G*`) cases remain only as history — that hook was retired in v0.9.3.
 
 The sync-back check hook is prompt-based and relies on a few runtime behaviors worth verifying once with `claude --debug` — ideally on a Windows machine. *(The export-gate hook was retired in v0.9.3 — see above; its `ask`/matcher checklist items below are superseded.)*
 
@@ -265,27 +267,39 @@ Broad, multi-category, date-bounded search is noisy; a dedicated agent absorbs i
 
 ---
 
-## Slash Commands (Optional Polish)
+## Slash Commands — ✅ implemented (2026-06-23, v1.3.0)
 
-Add explicit entry points as flat command files alongside the auto-triggering skill. These give power users a direct handle without relying on the description-match trigger.
+Explicit entry points as flat `commands/*.md` files alongside the auto-triggering skill, for users who prefer direct invocation over the description-match trigger.
 
-| Command | Intent |
-|---|---|
-| `/travel-planner:plan` | Start a new trip from scratch — jumps straight to first-time intake |
-| `/travel-planner:checkin` | Returning user check-in — pulls project context and surfaces what's changed |
-| `/travel-planner:scan` | Run the Booking Intel Agent standalone — surface new confirmations without the full workflow |
+*Full-flow entry points:*
 
-### Changes required
+| Command | Intent | Hands off to |
+|---|---|---|
+| `/travel-planner:plan` | Start a new trip from scratch — first-time intake → baseline plan | `travel-workflow` first-time path |
+| `/travel-planner:checkin` | Returning-user check-in — reconcile connectors/email, surface what changed | `travel-workflow` returning path |
+| `/travel-planner:enrich` | Run the adversarial discovery↔feasibility loop — enriched-but-realistic | discovery + feasibility loop |
 
-- Add `commands/plan.md`, `commands/checkin.md`, `commands/scan.md` as flat skill files
-- Each command can be thin — a brief description and a hand-off to the relevant section of `SKILL.md` or the Booking Intel Agent
-- Low priority: the skill auto-triggers well; these are for users who prefer explicit invocation
+*Single-purpose (one agent / read-only), mirroring the one-command-per-agent shape:*
+
+| Command | Intent | Hands off to |
+|---|---|---|
+| `/travel-planner:scan` | Standalone inbox scan — new confirmations/cancellations | `booking-intel` agent |
+| `/travel-planner:discover` | Surface events/activities/dining as a pick-list | `activity-discovery` agent |
+| `/travel-planner:feasibility` | Realism check — pacing/weather/budget/safety/legality/route | `feasibility-check` agent |
+| `/travel-planner:readiness` | Prep checklist — visa/vaccinations/insurance/packing/gear | `trip-readiness` agent |
+| `/travel-planner:status` | Read-only snapshot — days to go, booked vs. left, budget remaining | plan + spending file (no writes) |
+
+Each is thin: a `description` + `argument-hint`, `$ARGUMENTS` pass-through, and a hand-off to the right workflow entry point or agent — no logic duplicated from `SKILL.md`. Auto-discovered from `commands/` (no `plugin.json` change), same as the flat `agents/`. `:discover` surfaces options; `:enrich` adds *and* vets them in the adversarial loop.
 
 ---
 
-## Budgeting & Cost Splitting *(raised priority)*
+## Budgeting & Cost Splitting *(deferred — no quality connector available)*
 
-> **Groundwork delivered (2026-06-22):** the standalone-XLSX spending tracker above already provides the local budget/spend tracking, the one-source-of-truth principle, and a connector-aware source-of-truth rule (written, build deferred). **Remaining under this item** = the actual budget *connector* (Splitwise / Tricount / YNAB / Trail Wallet) with import/export sync, cost-splitting for groups, and the traveler-type behaviors below. `spending-integration.md` partly satisfies the planned `budget-integration.md`.
+> **Deferred (2026-06-23).** The native marketplace has no budgeting/cost-split connector worth integrating yet (no solid Splitwise / Tricount / YNAB / Trail Wallet MCP), so the connector build stays parked until one lands. There's little point wiring import/export against a connector that doesn't exist.
+>
+> **Already delivered (v1.1.0–v1.2.0)** and covering the everyday need without a connector: the standalone-XLSX spending file does local budget + **multi-currency** spend tracking with live formulas, the one-source-of-truth principle, and a connector-aware source-of-truth rule (written, build deferred). `spending-integration.md` already partly satisfies the planned `budget-integration.md`.
+>
+> **Remaining when a quality connector appears:** wire that connector (import/export sync), cost-splitting for groups, and the traveler-type behaviors below.
 
 Add a budgeting/cost split app as an optional connector. Especially valuable for groups. The travel plan is the natural home for budget tracking — the connector syncs spend data in and out.
 
@@ -323,9 +337,9 @@ Attach a `.zip` of the plugin directory to each GitHub release so users can inst
 
 ---
 
-## Email Declined-Item Suppression *(partially resolved in v0.7.0 — two holes remain)*
+## Email Declined-Item Suppression — ✅ resolved (v0.7.x)
 
-The v0.7.0 Sync State ledger resolves this for the common case: declining a surfaced booking writes a `declined` row, and reconciliation checks Sync State before surfacing. **But the v0.7.x review found two holes that break "suppressed permanently":** connector-sourced declines erase the remote ID suppression depends on (**P0-3**), and declines during first-time intake have no ledger to write to yet (**P1-1**). Suppression is only durable once both are fixed.
+The v0.7.0 Sync State ledger resolved the common case; the v0.7.x review found two holes, **both since closed in `sync-protocol.md`'s Decline rule**: connector-sourced declines now **keep the source Connector + Remote ID** as the suppression key (**P0-3**), and a decline during first-time intake — *before the plan file exists* — is remembered and written as a `declined` row when the plan is created in Step 2 (**P1-1**, also reflected in `SKILL.md`'s first-time-user flow). Suppression is durable in both paths: reconciliation checks Sync State before surfacing, and a `declined` row suppresses re-surfacing permanently unless the user asks.
 
 ---
 
