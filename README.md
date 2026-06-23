@@ -88,3 +88,17 @@ Just mention a trip:
 - *"I'm flying to Tokyo in September, help me plan it"*
 - *"Planning a road trip, what am I missing?"*
 - *"Can you set up my Portugal trip in Todoist?"*
+
+Or use a slash command for a direct entry point:
+
+*Run the flow:*
+- `/travel-planner:plan` — start a new trip from scratch
+- `/travel-planner:checkin` — pick up an existing trip and see what's changed
+- `/travel-planner:enrich` — add activities/dining and keep the plan realistic (discovery ↔ feasibility loop)
+
+*Just one thing:*
+- `/travel-planner:discover` — find more to do (events, activities, dining)
+- `/travel-planner:feasibility` — is this itinerary realistic, affordable, safe?
+- `/travel-planner:readiness` — what do I still need to prepare and pack?
+- `/travel-planner:scan` — scan email for new confirmations and cancellations
+- `/travel-planner:status` — a quick read-only snapshot of where things stand
