@@ -330,12 +330,39 @@ Splitwise, Tricount, YNAB, Trail Wallet — detect what's connected, use it if a
 
 ---
 
-## GitHub Release Packaging *(low priority)*
+## GitHub Release Packaging *(deferred — redundant with the marketplace flow)*
+
+> **Deferred (2026-06-23).** Distribution is via the `claude-plugins` marketplace, which pins `travel-planner` to a commit SHA — that already does delivery + version pinning, and is how users actually install. A `--plugin-url` zip would be a second, *inferior* path (raw-zip installs don't auto-update), add a third version source-of-truth to keep in sync, and require cutting real git tags/Releases we don't currently make. Revisit only if there's demand for offline/air-gapped installs. The cheap sliver if ever wanted: just start cutting git tags + GitHub Releases (skip the zip Action).
 
 Attach a `.zip` of the plugin directory to each GitHub release so users can install a specific version via `--plugin-url` without going through the marketplace update cycle. Useful for version pinning and offline installs.
 
 ### Changes required
 - Add a GitHub Action that zips the plugin directory and attaches it as a release asset on each version tag
+
+---
+
+## Backlog — candidate features *(surfaced 2026-06-23, not scheduled)*
+
+Ideas worth considering next. Curated to fit the existing architecture — nothing here needs a connector that doesn't exist (the lesson from the deferred Budgeting item). Ordered by value-for-effort.
+
+### Top picks — build on existing pieces, no new connector
+
+1. **In-trip daily briefing (`/today`)** — *highest-value gap.* The workflow detects an in-progress trip but does little with it. A daily briefing assembles today's plan, the local forecast (WebSearch), today's reservations + hard deadlines, what's "due in person" (from the spending file), and anything time-sensitive — plus light re-planning when something slips. All inputs already exist (plan, spending file, feasibility logic, WebSearch, scheduled-task capability for a morning push). Turns the thin "trip in progress" branch into a real mode; pairs with a `/today` command.
+2. **Shareable / printable itinerary export (+ offline pack)** — solo travelers are told to "share the itinerary with a contact at home," but there's no artifact to share. Generate a read-only itinerary (clean PDF/doc) using the same "generated, labeled, never-hand-edited" principle as the spending CSV. Extend to an **offline pack**: itinerary + key confirmations + emergency/embassy info bundled for offline use (connectivity is already a readiness category).
+3. **Post-trip wrap-up / expense reconciliation** — the Follow-up step is thin. Reconcile the spending file's actuals vs. budget, surface insurance-claim windows (partially there), prompt for receipts, and produce a short trip summary. Closes the trip lifecycle; builds on the spending file + Follow-up checklist.
+
+### Worth considering — medium value, cheap
+
+4. **Calendar-conflict detection on schedule** — when exporting trip dates, flag clashes with existing calendar events ("a work meeting overlaps your outbound flight"). Uses the calendar read the plugin already does.
+5. **Document tracker** — close the gap between readiness saying "get a visa" and whether it's actually in hand: track passport/visa/insurance/tickets with obtained-status + expiry, surfaced pre-departure. A checklist in the plan (or a file/drive connector if present).
+6. **Trip cloning / templates** — reuse a past trip's shape for a similar new one (the state file already tracks multiple trips). Pure QoL.
+
+### Lower / more ambitious
+
+7. **Scheduled disruption monitoring** — weather/advisory changes mid-trip via scheduled tasks + WebSearch. High value but more moving parts; flight-status would need a connector that doesn't exist.
+8. **Carbon footprint estimate** — feasibility already has legs + modes, so an emissions estimate is cheap, but niche.
+
+*(Cost-splitting and reservation automation are connector-dependent — see the deferred Budgeting & Cost Splitting item.)*
 
 ---
 
